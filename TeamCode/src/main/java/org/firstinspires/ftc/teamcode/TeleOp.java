@@ -1,5 +1,8 @@
 package org.firstinspires.ftc.teamcode;
 
+import android.content.Context;
+import android.content.SharedPreferences;
+
 import com.acmerobotics.roadrunner.geometry.Pose2d;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 
@@ -10,6 +13,7 @@ import org.firstinspires.ftc.teamcode.core.gamepad.GamepadEventPS;
 
 import static java.lang.Double.parseDouble;
 import static java.lang.Math.PI;
+import static java.lang.Math.toRadians;
 import static org.firstinspires.ftc.teamcode.core.ActuationConstants.FEEDER_REST;
 import static org.firstinspires.ftc.teamcode.core.ActuationConstants.FEEDER_YEET;
 import static org.firstinspires.ftc.teamcode.core.ActuationConstants.Target.POWER_SHOT_LEFT;
@@ -36,17 +40,20 @@ public class TeleOp extends OpMode {
     GamepadEventPS update1, update2;
     boolean normalslowMode = false;
     boolean reverseSlowMode = false;
-    boolean targettingTowerGoal = true; // Shooter is either set to target tower goal or powershot
+    boolean targettingTowerGoal = false; // Shooter is either set to target tower goal or powershot
 
     @Override
     public void init() {
         drive = new StandardMechanumDrive(hardwareMap);
         Pose2d startPose;
-        String serialized = ""; /*hardwareMap.appContext.getSharedPreferences("Auton end pose", Context.MODE_PRIVATE)
-                .getString("serialized", "");*/
-        if (serialized.equals(""))
+        String serialized = hardwareMap.appContext.getSharedPreferences("Auton end pose", Context.MODE_PRIVATE)
+                .getString("serialized", "");
+
+        /*if (serialized.equals(""))
             startPose = autonStartPose;
-        else startPose = unserialize(serialized);
+        else startPose = unserialize(serialized);*/
+        SharedPreferences prefs = hardwareMap.appContext.getSharedPreferences("Auton end pose", Context.MODE_PRIVATE);
+        startPose = new Pose2d(prefs.getLong("x", 12), prefs.getLong("y", 0), prefs.getLong("heading", (long)toRadians(-90)));
         drive.setPoseEstimate(startPose);
         actuation = new Actuation(hardwareMap, drive, null);
         update1 = new GamepadEventPS(gamepad1);
@@ -134,8 +141,8 @@ public class TeleOp extends OpMode {
         if(update1.square()) {
             targettingTowerGoal = !targettingTowerGoal;
             if(targettingTowerGoal)
-                actuation.preheatShooter(TOWER_GOAL);
-            else actuation.preheatShooter(POWER_SHOT_MIDDLE);
+                actuation.preheatShooter(-4.0);
+            else actuation.preheatShooter(-3.55);
         }
 
         if(update1.cross())
@@ -146,7 +153,7 @@ public class TeleOp extends OpMode {
             actuation.shoot();
 
         if(update1.triangle()) {
-            ActuationConstants.Target[] targets = {POWER_SHOT_RIGHT, POWER_SHOT_MIDDLE, POWER_SHOT_LEFT};
+            /*ActuationConstants.Target[] targets = {POWER_SHOT_RIGHT, POWER_SHOT_MIDDLE, POWER_SHOT_LEFT};
             for (int i = 0; i < 3; i++) {
                 Pose2d pose = drive.getPoseEstimate();
 
@@ -164,7 +171,20 @@ public class TeleOp extends OpMode {
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
-            }
+            }*/
+
+            /*for(int i = 0; i < 2; i++) {
+                try {
+                    Thread.sleep(500);
+                    actuation.feeder.setPosition(FEEDER_REST);
+                    Thread.sleep(500);
+                    actuation.feeder.setPosition(FEEDER_YEET);
+
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+                drive.followTrajectoryAsync(drive.trajectoryBuilder(drive.getPoseEstimate()).strafeLeft(3).build());
+            }*/
 
 //            actuation.powerShots();
         }

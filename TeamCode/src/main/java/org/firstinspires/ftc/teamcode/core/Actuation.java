@@ -208,7 +208,7 @@ public class Actuation {
     }
 
     public void powerShots() {
-        powerShots(0.14,0.06,0.04);
+        powerShots(0.14,0.08,0.06);
     }
 
     public void preheatShooter(double velocity) {
@@ -217,7 +217,7 @@ public class Actuation {
 
     public void preheatShooter(Target target) {
         if (shoot != null)
-            shoot.setVelocity(target == TOWER_GOAL ? -4.0 : -3.6, AngleUnit.RADIANS);
+            shoot.setVelocity(target == TOWER_GOAL ? -4.0 : -3.4, AngleUnit.RADIANS);
     }
 
     public void killFlywheel() {
@@ -323,7 +323,8 @@ public class Actuation {
 
     public void placeWobble() {
         if (wobbleArm != null && wobbleGrab != null) {
-            wobbleArmDown();
+//            wobbleArmDown();
+            wobbleArm.setPosition(0.6);
             linearOpMode.sleep(750);
             wobbleClawOpen();
             linearOpMode.sleep(750);

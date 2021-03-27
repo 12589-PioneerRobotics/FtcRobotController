@@ -134,34 +134,42 @@ public class AutonomousRemote extends LinearOpMode {
         Trajectory startToRings;
         switch (ringCase) {
             case "None": // Zero rings, case "A"
-                actuation.preheatShooter(-3.6);
-                sleep(750);
-//                drive.followTrajectory(drive.trajectoryBuilder(drive.getPoseEstimate()).splineToConstantHeading(ringPos, 0).build());
-                drive.followTrajectory(drive.trajectoryBuilder(drive.getPoseEstimate()).forward(60).build());
+                actuation.preheatShooter(-3.88);
 
-                actuation.powerShots();
+//                drive.followTrajectory(drive.trajectoryBuilder(drive.getPoseEstimate()).splineToConstantHeading(ringPos, 0).build());
+                startToRings = drive.trajectoryBuilder(drive.getPoseEstimate()).splineToLinearHeading(new Pose2d(0,-30), 0).build();
+                drive.followTrajectory(startToRings);
+
+                actuation.shoot(TOWER_GOAL, 0.1);
+
+                sleep(300);
+
+
+                actuation.shootInPlace(2);
 
                 actuation.killFlywheel();
                 wobbleRoutine(centerA, backPoseA);
                 break;
 
             case LABEL_SECOND_ELEMENT: // One ring, case "B", "Single"
-                actuation.preheatShooter(-3.85);
+                actuation.preheatShooter(-3.9);
+                drive.followTrajectory(drive.trajectoryBuilder(drive.getPoseEstimate()).forward(12).build());
 
-                drive.followTrajectory(drive.trajectoryBuilder(drive.getPoseEstimate()).lineToLinearHeading(new Pose2d(-43,-33)).build());
-
-
-                actuation.shoot(TOWER_GOAL, 0.15);
+                actuation.shoot(TOWER_GOAL, 0.17);
 
 //                actuation.preheatShooter(TOWER_GOAL);
                 actuation.suck();
-                startToRings = drive.trajectoryBuilder(drive.getPoseEstimate()).splineToConstantHeading(ringPos, 0).build();
+                startToRings = drive.trajectoryBuilder(drive.getPoseEstimate()).splineToLinearHeading(new Pose2d(0,-30), 0).build();
                 drive.followTrajectory(startToRings);
 
                 telemetry.addData("current pose", drive.getPoseEstimate().toString());
 
-                actuation.preheatShooter(-3.6);
-                actuation.powerShots(0.12,0.05,0.04);
+                actuation.shoot(TOWER_GOAL, 0.15);
+                actuation.stopIntake();
+                sleep(300);
+                actuation.suck();
+
+                actuation.shootInPlace(2);
 
                 actuation.stopIntake();
                 actuation.killFlywheel();
@@ -170,11 +178,12 @@ public class AutonomousRemote extends LinearOpMode {
 
             case LABEL_FIRST_ELEMENT: // 4 rings, case "C", "Quad"
 
-                actuation.preheatShooter(-3.9);
+                actuation.preheatShooter(-3.91);
                 drive.followTrajectory(drive.trajectoryBuilder(drive.getPoseEstimate()).forward(12).build());
-
+                sleep(400);
                 actuation.shoot(TOWER_GOAL, 0.17);
-                sleep(500);
+                sleep(400);
+
 
                 actuation.shootInPlace(2);
 
@@ -183,9 +192,15 @@ public class AutonomousRemote extends LinearOpMode {
 
                 startToRings = drive.trajectoryBuilder(drive.getPoseEstimate()).splineToConstantHeading(ringPos, 0).build();
                 drive.followTrajectory(startToRings);
+                actuation.stopIntake();
 
-                actuation.preheatShooter(-3.6);
-                actuation.powerShots(0.14,0.08,0.06);
+                actuation.preheatShooter(-3.8);
+
+                //actuation.powerShotsC(0.14,0.08,0.06);
+                actuation.shoot(TOWER_GOAL, 0.15);
+
+
+                actuation.shootInPlace(1);
 
                 actuation.stopIntake();
                 actuation.killFlywheel();

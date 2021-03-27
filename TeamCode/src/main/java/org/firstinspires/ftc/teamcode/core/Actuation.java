@@ -189,9 +189,9 @@ public class Actuation {
     public void shootInPlace(int times) {
         for(int i = 0; i < times; i++) {
             feeder.setPosition(FEEDER_YEET);
-            linearOpMode.sleep(500);
+            linearOpMode.sleep(400);
             feeder.setPosition(FEEDER_REST);
-            linearOpMode.sleep(500);
+            linearOpMode.sleep(400);
         }
     }
 
@@ -203,6 +203,16 @@ public class Actuation {
             shoot(POWER_SHOT_MIDDLE, middleOffset);
             Thread.sleep(750);
             shoot(POWER_SHOT_LEFT, leftOffset);
+        }
+        catch (InterruptedException e) { e.printStackTrace(); }
+    }
+    public void powerShotsC(double rightOffset, double middleOffset, double leftOffset) {
+
+        try {
+            shoot(POWER_SHOT_RIGHT, rightOffset);
+            Thread.sleep(750);
+            shoot(POWER_SHOT_MIDDLE, middleOffset);
+            Thread.sleep(100);
         }
         catch (InterruptedException e) { e.printStackTrace(); }
     }

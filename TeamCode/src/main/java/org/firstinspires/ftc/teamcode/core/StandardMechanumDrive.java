@@ -162,11 +162,19 @@ public class StandardMechanumDrive extends MecanumDrive {
         return new TrajectoryBuilder(startPose, velConstraint, accelConstraint);
     }
 
+    public TrajectoryBuilder trajectoryBuilder(Pose2d startPose, MinVelocityConstraint velConstraint, ProfileAccelerationConstraint accelConstraint) {
+        return new TrajectoryBuilder(startPose, velConstraint, accelConstraint);
+    }
+
     public TrajectoryBuilder trajectoryBuilder(Pose2d startPose, boolean reversed) {
         return new TrajectoryBuilder(startPose, reversed, velConstraint, accelConstraint);
     }
 
     public TrajectoryBuilder trajectoryBuilder(Pose2d startPose, double startTangent) {
+        return new TrajectoryBuilder(startPose, startTangent, velConstraint, accelConstraint);
+    }
+
+    public TrajectoryBuilder trajectoryBuilder(Pose2d startPose, MinVelocityConstraint velConstraint, ProfileAccelerationConstraint accelConstraint, double startTangent) {
         return new TrajectoryBuilder(startPose, startTangent, velConstraint, accelConstraint);
     }
 

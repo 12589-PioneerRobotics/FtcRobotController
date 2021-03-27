@@ -29,8 +29,9 @@
 
 package org.firstinspires.ftc.teamcode.core;
 
+import android.util.Log;
+
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
-import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 
 import org.firstinspires.ftc.robotcore.external.ClassFactory;
@@ -41,7 +42,7 @@ import org.firstinspires.ftc.robotcore.external.tfod.TFObjectDetector;
 
 import java.util.List;
 
-public class TensorFlowRingDetection {
+public class TensorFlowRingDetection implements Runnable {
     private static final String TFOD_MODEL_ASSET = "UltimateGoal.tflite";
     public static final String LABEL_FIRST_ELEMENT = "Quad";
     public static final String LABEL_SECOND_ELEMENT = "Single";
@@ -52,6 +53,11 @@ public class TensorFlowRingDetection {
     private VuforiaLocalizer vuforia;
 
     private TFObjectDetector tfod;
+
+    LinearOpMode linearOpMode;
+    public String ringCase = "";
+    public boolean stopFlag = false;
+
 
     private void initVuforia() {
         /*
@@ -81,6 +87,7 @@ public class TensorFlowRingDetection {
     }
 
     public TensorFlowRingDetection(LinearOpMode linearOpMode) {
+        this.linearOpMode = linearOpMode;
         initVuforia();
         initTfod(linearOpMode.hardwareMap);
         if (tfod != null) {
@@ -88,7 +95,7 @@ public class TensorFlowRingDetection {
         }
     }
 
-    public String res(LinearOpMode linearOpMode) {
+    public String res() {
         if (tfod != null) {
             List<Recognition> updatedRecognitions = tfod.getUpdatedRecognitions();
             if (updatedRecognitions != null) {
@@ -115,5 +122,35 @@ public class TensorFlowRingDetection {
 
         linearOpMode.telemetry.update();
         return "Issue";
+    }
+
+    @Override
+    public void run() {
+        Log.v("CV Thread", "begin");
+        while (!stopFlag) {
+            if (tfod != null) {
+                // getUpdatedRecognitions() will return null if no new information is available since
+                // the last time that call was made.
+                List<Recognition> updatedRecognitions = tfod.getUpdatedRecognitions();
+                if (updatedRecognitions != null) {
+//                        linearOpMode.telemetry.addData("# Object Detected", updatedRecognitions.size());
+
+                    if (!updatedRecognitions.isEmpty())
+                        ringCase = updatedRecognitions.get(0).getLabel();
+                    else ringCase = "None";
+                    linearOpMode.telemetry.addData("Ring case", ringCase);
+                    linearOpMode.telemetry.update();
+                }
+            }
+            if (stopFlag && tfod != null) {
+                tfod.shutdown();
+                return;
+            }
+        }
+
+
+        if (tfod != null) {
+            tfod.shutdown();
+        }
     }
 }

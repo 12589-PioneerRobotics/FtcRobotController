@@ -3,6 +3,10 @@ package org.firstinspires.ftc.teamcode.core.gamepad;
 import com.qualcomm.robotcore.hardware.Gamepad;
 import org.jetbrains.annotations.NotNull;
 
+/**
+ * Simple wrapper class for easy togglable controls of a PlayStation controller, using Toggle.OneShot.
+ * Every button/bumper on the PS controller is mapped to a separate Toggle.OneShot instance.
+ */
 public class GamepadEventPS extends Toggle.OneShot {
     Toggle.OneShot circle, square, cross, triangle, dPadLeft, dPadRight, dPadUp, dPadDown, leftBumper, rightBumper, leftStickButton, rightStickButton, share;
 

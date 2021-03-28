@@ -7,23 +7,19 @@ import com.acmerobotics.roadrunner.geometry.Vector2d;
 import com.acmerobotics.roadrunner.trajectory.Trajectory;
 import com.acmerobotics.roadrunner.trajectory.constraints.AngularVelocityConstraint;
 import com.acmerobotics.roadrunner.trajectory.constraints.MecanumVelocityConstraint;
-import com.acmerobotics.roadrunner.trajectory.constraints.MinAccelerationConstraint;
 import com.acmerobotics.roadrunner.trajectory.constraints.MinVelocityConstraint;
 import com.acmerobotics.roadrunner.trajectory.constraints.ProfileAccelerationConstraint;
-import com.acmerobotics.roadrunner.trajectory.constraints.TrajectoryAccelerationConstraint;
-import com.acmerobotics.roadrunner.trajectory.constraints.TrajectoryVelocityConstraint;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 
 import org.firstinspires.ftc.teamcode.core.Actuation;
 import org.firstinspires.ftc.teamcode.core.StandardMechanumDrive;
 import org.firstinspires.ftc.teamcode.core.TensorFlowRingDetection;
-import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 
-import static java.lang.Math.exp;
-import static java.lang.Math.subtractExact;
 import static java.lang.Math.toRadians;
 import static org.firstinspires.ftc.teamcode.core.ActuationConstants.Target.POWER_SHOT_RIGHT;
 import static org.firstinspires.ftc.teamcode.core.ActuationConstants.Target.TOWER_GOAL;
@@ -31,11 +27,15 @@ import static org.firstinspires.ftc.teamcode.core.DriveConstants.MAX_ACCEL;
 import static org.firstinspires.ftc.teamcode.core.DriveConstants.MAX_ANG_VEL;
 import static org.firstinspires.ftc.teamcode.core.DriveConstants.MAX_VEL;
 import static org.firstinspires.ftc.teamcode.core.DriveConstants.TRACK_WIDTH;
-import static org.firstinspires.ftc.teamcode.core.FieldConstants.*;
+import static org.firstinspires.ftc.teamcode.core.FieldConstants.SHOOT_LINE;
+import static org.firstinspires.ftc.teamcode.core.FieldConstants.autonStartPose;
+import static org.firstinspires.ftc.teamcode.core.FieldConstants.backPoseA;
+import static org.firstinspires.ftc.teamcode.core.FieldConstants.backPoseB;
+import static org.firstinspires.ftc.teamcode.core.FieldConstants.backPoseC;
 import static org.firstinspires.ftc.teamcode.core.FieldConstants.centerA;
 import static org.firstinspires.ftc.teamcode.core.FieldConstants.centerB;
 import static org.firstinspires.ftc.teamcode.core.FieldConstants.centerC;
-import static org.firstinspires.ftc.teamcode.core.FieldConstants.autonStartPose;
+import static org.firstinspires.ftc.teamcode.core.FieldConstants.ringPos;
 import static org.firstinspires.ftc.teamcode.core.TensorFlowRingDetection.LABEL_FIRST_ELEMENT;
 import static org.firstinspires.ftc.teamcode.core.TensorFlowRingDetection.LABEL_SECOND_ELEMENT;
 
@@ -65,27 +65,25 @@ public class AutonomousRemote extends LinearOpMode {
         actuation = new Actuation(this, drive);
         ringDetection = new TensorFlowRingDetection(this);
 
-        Thread cvThread = new Thread(ringDetection);
-        cvThread.start();
-
+        new Thread(ringDetection).start();
         waitForStart();
-
         ringCase = ringDetection.ringCase;
         ringDetection.stopFlag = true;
-        telemetry.addData("Ring case here", ringCase);
-        telemetry.update();
-
 
         if (isStopRequested()) return;
 
-        performCase(ringCase);
+        try {
+            performCase(ringCase);
+        } catch (ExecutionException e) {
+            e.printStackTrace();
+        }
         park();
         hardwareMap.appContext
                 .getSharedPreferences("Auton end pose", Context.MODE_PRIVATE).edit()
                 .putString("serialized", drive.getPoseEstimate().toString())
-                .putLong("x", (long)drive.getPoseEstimate().getX())
-                .putLong("y", (long)drive.getPoseEstimate().getY())
-                .putLong("heading", (long)drive.getPoseEstimate().getHeading())
+                .putLong("x", (long) drive.getPoseEstimate().getX())
+                .putLong("y", (long) drive.getPoseEstimate().getY())
+                .putLong("heading", (long) drive.getPoseEstimate().getHeading())
                 .apply();
     }
 
@@ -95,19 +93,15 @@ public class AutonomousRemote extends LinearOpMode {
     }
 
     /**
-     * 1. Go to center square of desired square
-     * 2. Release 1st wobble (already preloaded)
-     * 3. Go to start area
-     * 4. Grab other wobble
-     * 5. Go back to same case square
-     * 6. Drop off 2nd wobble
+     * 1. Go to center square of desired square 2. Release 1st wobble (already preloaded) 3. Go to
+     * start area 4. Grab other wobble 5. Go back to same case square 6. Drop off 2nd wobble
      */
-    void wobbleRoutine(Pose2d center, Pose2d back) {
+    void wobbleRoutine(Pose2d center, Pose2d back) throws ExecutionException, InterruptedException {
         // centerPose is a pose of the square's center (A/B/C), backPose is the position the robot will be in to collect the second wobble goal
         Pose2d centerAgain = center;
         centerAgain = new Pose2d(centerAgain.getX() - 10, centerAgain.getY() + 5, centerAgain.getHeading());
 
-        if(center.epsilonEquals(centerC))
+        if (center.epsilonEquals(centerC))
             SHOOT_LINE = 8;
 
         // Go to square for 1st time, drop off preloaded wobble
@@ -118,17 +112,27 @@ public class AutonomousRemote extends LinearOpMode {
                         .build()
         );
 
+        Future<Trajectory> centerToBackTask = drive.trajectory(() -> {
+            drive.trajectoryBuilder(drive.getPoseEstimate(), toRadians(180))
+                    .splineToLinearHeading(back, toRadians(180))
+                    .build();
+        });
+
         actuation.wobbleClawOpen();
         sleep(550);
         actuation.wobbleArmUp();
 
         // Go back to start area to get 2nd wobble, go back to same square
-        drive.followTrajectory(
-                drive.trajectoryBuilder(drive.getPoseEstimate(), toRadians(180))
-                        .splineToLinearHeading(back, toRadians(180))
-//                        .splineTo(back.vec(), toRadians(180))
-                        .build()
-        );
+        while(!centerToBackTask.isDone());
+        Trajectory centerToBack = centerToBackTask.get();
+        drive.followTrajectory(centerToBack);
+
+
+        Pose2d finalCenterAgain = centerAgain;
+        Future<Trajectory> backToCenterTask = drive.trajectory(() ->
+                drive.trajectoryBuilder(drive.getPoseEstimate(), drive.getPoseEstimate().getHeading())
+                .splineToLinearHeading(finalCenterAgain, toRadians(180))
+                .build());
 
         // Collect 2nd wobble (right side), go back to drop off second wobble and place it
         actuation.wobbleArmDown();
@@ -137,11 +141,9 @@ public class AutonomousRemote extends LinearOpMode {
         sleep(750);
         actuation.wobbleArmSlightltyUp();
 
-        drive.followTrajectory(
-                drive.trajectoryBuilder(drive.getPoseEstimate(), drive.getPoseEstimate().getHeading())
-                        .splineToLinearHeading(centerAgain, toRadians(180))
-                        .build()
-        );
+        while(!backToCenterTask.isDone());
+        Trajectory backToCenter = backToCenterTask.get();
+        drive.followTrajectory(backToCenter);
         actuation.placeWobble();
     }
 
@@ -157,19 +159,22 @@ public class AutonomousRemote extends LinearOpMode {
         ));
         ProfileAccelerationConstraint accelConstraint = new ProfileAccelerationConstraint(MAX_ACCEL * limiter);
 
+        Pose2d backEntry = new Pose2d(back.getX() + 10, back.getY() - 5);
+        Pose2d backExit = new Pose2d(back.getX() + 10, back.getY() + 5);
+
         telemetry.addLine("Calculating trajectory...");
         telemetry.update();
         Trajectory trajectory = drive.trajectoryBuilder(drive.getPoseEstimate(), velConstraint, accelConstraint, toRadians(-90))
                 .splineToSplineHeading(center, toRadians(-90))
-                .addTemporalMarker(1, () -> actuation.wobbleArmDown())
-                .addSpatialMarker(center.vec(), () -> {
-                    actuation.wobbleClawOpen();
-//                    sleep(500);
-//                    actuation.wobbleArmDown();
-                })
+                .addTemporalMarker(0.5, () -> actuation.wobbleArmDown())
+                .addSpatialMarker(center.vec(), () -> actuation.wobbleClawOpen())
 
                 .splineToSplineHeading(back, toRadians(130))
-                .addSpatialMarker(back.vec(), () -> actuation.wobbleClawClose())
+                .addSpatialMarker(back.vec(), () -> {
+                    actuation.wobbleClawClose();
+                    sleep(500);
+                    actuation.wobbleArmSlightltyUp();
+                })
 
                 .splineToSplineHeading(centerAgain, toRadians(180))
                 .addSpatialMarker(centerAgain.vec(), () -> actuation.wobbleClawOpen())
@@ -210,21 +215,17 @@ public class AutonomousRemote extends LinearOpMode {
         actuation.placeWobble();*/
     }
 
-    private void performCase(String ringCase) {
+    private void performCase(String ringCase) throws ExecutionException, InterruptedException {
         Trajectory startToRings;
         switch (ringCase) {
             case "None": // Zero rings, case "A"
                 actuation.preheatShooter(-3.88);
 
-//                drive.followTrajectory(drive.trajectoryBuilder(drive.getPoseEstimate()).splineToConstantHeading(ringPos, 0).build());
-                startToRings = drive.trajectoryBuilder(drive.getPoseEstimate()).splineToLinearHeading(new Pose2d(0,-30), 0).build();
+                startToRings = drive.trajectoryBuilder(drive.getPoseEstimate()).splineToLinearHeading(new Pose2d(0, -30), 0).build();
                 drive.followTrajectory(startToRings);
 
                 actuation.shoot(TOWER_GOAL, 0.1);
-
                 sleep(300);
-
-
                 actuation.shootInPlace(2);
 
                 actuation.killFlywheel();
@@ -238,9 +239,18 @@ public class AutonomousRemote extends LinearOpMode {
 
                 actuation.shoot(TOWER_GOAL, 0.17);
 
+                Future<Trajectory> startToRingsTask = drive.trajectory(
+                        () -> drive.trajectoryBuilder(
+                                drive
+                                        .getPoseEstimate())
+                                .splineToLinearHeading(new Pose2d(0, -30), 0)
+                                .build());
+
+
 //                actuation.preheatShooter(TOWER_GOAL);
                 actuation.suck();
-                startToRings = drive.trajectoryBuilder(drive.getPoseEstimate()).splineToLinearHeading(new Pose2d(0,-30), 0).build();
+                while (!startToRingsTask.isDone() && opModeIsActive()) ;
+                startToRings = startToRingsTask.get();
                 drive.followTrajectory(startToRings);
 
                 telemetry.addData("current pose", drive.getPoseEstimate().toString());
@@ -266,21 +276,19 @@ public class AutonomousRemote extends LinearOpMode {
                 actuation.shoot(TOWER_GOAL, 0.17);
                 sleep(400);
 
+                startToRings = drive.trajectoryBuilder(drive.getPoseEstimate()).splineToConstantHeading(ringPos, 0).build();
 
                 actuation.shootInPlace(2);
-
                 actuation.preheatShooter(POWER_SHOT_RIGHT);
                 actuation.suck();
 
-                startToRings = drive.trajectoryBuilder(drive.getPoseEstimate()).splineToConstantHeading(ringPos, 0).build();
                 drive.followTrajectory(startToRings);
                 actuation.stopIntake();
 
                 actuation.preheatShooter(-3.8);
 
-                //actuation.powerShotsC(0.14,0.08,0.06);
+                //actuation.powerShots(0.14,0.08,0.06);
                 actuation.shoot(TOWER_GOAL, 0.15);
-
 
                 actuation.shootInPlace(1);
 

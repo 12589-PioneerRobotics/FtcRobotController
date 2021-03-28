@@ -42,6 +42,11 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+
+import javax.security.auth.callback.Callback;
 
 import static org.firstinspires.ftc.teamcode.core.DriveConstants.MAX_ACCEL;
 import static org.firstinspires.ftc.teamcode.core.DriveConstants.MAX_ANG_ACCEL;
@@ -95,6 +100,8 @@ public class StandardMechanumDrive extends MecanumDrive {
     private VoltageSensor batteryVoltageSensor;
 
     private Pose2d lastPoseOnTurn;
+
+    private ExecutorService threadpool;
 
     public StandardMechanumDrive(final HardwareMap hardwareMap) {
         super(kV, kA, kStatic, TRACK_WIDTH, TRACK_WIDTH, LATERAL_MULTIPLIER);
@@ -156,6 +163,7 @@ public class StandardMechanumDrive extends MecanumDrive {
         }
 
         setLocalizer(new StandardTrackingWheelLocalizer(hardwareMap)); // Comment out if using all 4 motors for navigation
+        threadpool = Executors.newCachedThreadPool();
     }
 
     public TrajectoryBuilder trajectoryBuilder(Pose2d startPose) {
@@ -176,6 +184,10 @@ public class StandardMechanumDrive extends MecanumDrive {
 
     public TrajectoryBuilder trajectoryBuilder(Pose2d startPose, MinVelocityConstraint velConstraint, ProfileAccelerationConstraint accelConstraint, double startTangent) {
         return new TrajectoryBuilder(startPose, startTangent, velConstraint, accelConstraint);
+    }
+
+    public Future<Trajectory> trajectory(Runnable runnable) {
+        return (Future<Trajectory>) threadpool.submit(runnable);
     }
 
     public void turnAsync(double angle) {

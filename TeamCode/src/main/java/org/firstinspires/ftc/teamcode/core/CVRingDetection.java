@@ -1,6 +1,6 @@
 package org.firstinspires.ftc.teamcode.core;
 
-/*import org.opencv.core.Core;
+import org.opencv.core.Core;
 import org.opencv.core.Mat;
 import org.opencv.core.MatOfPoint;
 import org.opencv.core.MatOfPoint2f;
@@ -8,16 +8,16 @@ import org.opencv.core.Point;
 import org.opencv.core.Rect;
 import org.opencv.core.Scalar;
 import org.opencv.imgproc.Imgproc;
-import org.openftc.easyopencv.OpenCvPipeline;*/
+import org.openftc.easyopencv.OpenCvPipeline;
 
 import java.util.ArrayList;
 
-public class FrameProcessor /*extends OpenCvPipeline*/ {
+public class CVRingDetection extends OpenCvPipeline {
     private String ringCase;
-//    private ArrayList<MatOfPoint> contours = new ArrayList<>();
+    private ArrayList<MatOfPoint> contours = new ArrayList<>();
     private int boundingRectHeight = 0;
 
-/*    @Override
+    @Override
     public Mat processFrame(Mat input) {
         Rect cropBox = new Rect(new Point(0,0), new Point(100,100));
         Mat cropped = new Mat(input, cropBox);
@@ -41,19 +41,19 @@ public class FrameProcessor /*extends OpenCvPipeline*/ {
             Rect boundingRectangle = Imgproc.boundingRect(new MatOfPoint2f(contours.get(largestContourIndex).toArray()));
             Imgproc.rectangle(input, boundingRectangle.br(), boundingRectangle.tl(), new Scalar(0,255,0), 2);
             boundingRectHeight = boundingRectangle.height;
-//            Imgproc.drawContours(input, contours, largestContourIndex, new Scalar(0,255,0));
+            Imgproc.drawContours(input, contours, largestContourIndex, new Scalar(0,255,0));
 
         }
 
         return input;
-    }*/
+    }
 
     public String getRingCase() {
         return ringCase;
     }
-//    public int getContourCount() {
-//        return contours.size();
-//    }
+    public int getContourCount() {
+        return contours.size();
+    }
     public int getBoundingRectHeight() {
         return boundingRectHeight;
     }

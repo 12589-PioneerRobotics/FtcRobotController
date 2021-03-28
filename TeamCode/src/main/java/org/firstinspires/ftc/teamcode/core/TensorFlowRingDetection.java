@@ -95,35 +95,6 @@ public class TensorFlowRingDetection implements Runnable {
         }
     }
 
-    public String res() {
-        if (tfod != null) {
-            List<Recognition> updatedRecognitions = tfod.getUpdatedRecognitions();
-            if (updatedRecognitions != null) {
-                linearOpMode.sleep(600);
-                while (linearOpMode.opModeIsActive()) {
-                    updatedRecognitions = tfod.getUpdatedRecognitions();
-                    if (updatedRecognitions != null) {
-                        linearOpMode.telemetry.addData("# Object Detected", updatedRecognitions.size());
-
-                        linearOpMode.telemetry.update();
-                        if (!updatedRecognitions.isEmpty())
-                            return updatedRecognitions.get(0).getLabel();
-                        else return "None";
-                    }
-                }
-            }
-        } else {
-            linearOpMode.telemetry.addData("TFOD", "recognitions list null!!!");
-            linearOpMode.telemetry.update();
-        }
-
-
-        tfod.shutdown();
-
-        linearOpMode.telemetry.update();
-        return "Issue";
-    }
-
     @Override
     public void run() {
         Log.v("CV Thread", "begin");

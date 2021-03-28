@@ -1,5 +1,7 @@
 package org.firstinspires.ftc.teamcode.core;
 
+import androidx.annotation.NonNull;
+
 import com.acmerobotics.dashboard.config.Config;
 import com.acmerobotics.roadrunner.geometry.Vector2d;
 import com.qualcomm.robotcore.hardware.PIDFCoefficients;
@@ -51,6 +53,23 @@ public class ActuationConstants {
                     return redGoal;
                 default:
                     return new Vector2d();
+            }
+        }
+
+        @NonNull
+        @Override
+        public String toString() {
+            switch (this) {
+                case TOWER_GOAL:
+                    return "Tower Goal";
+                case POWER_SHOT_LEFT:
+                    return "Left Power Shot";
+                case POWER_SHOT_RIGHT:
+                    return "Right Power Shot";
+                case POWER_SHOT_MIDDLE:
+                    return "Middle Power Shot";
+                default:
+                    return "???";
             }
         }
     }

@@ -206,16 +206,6 @@ public class Actuation {
         }
         catch (InterruptedException e) { e.printStackTrace(); }
     }
-    public void powerShotsC(double rightOffset, double middleOffset, double leftOffset) {
-
-        try {
-            shoot(POWER_SHOT_RIGHT, rightOffset);
-            Thread.sleep(750);
-            shoot(POWER_SHOT_MIDDLE, middleOffset);
-            Thread.sleep(100);
-        }
-        catch (InterruptedException e) { e.printStackTrace(); }
-    }
 
     public void powerShots() {
         powerShots(0.14,0.08,0.06);

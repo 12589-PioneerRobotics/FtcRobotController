@@ -264,8 +264,8 @@ public class AutonomousRemote extends LinearOpMode {
 
                 actuation.stopIntake();
                 actuation.killFlywheel();
-//                wobbleRoutine(centerB, backPoseB);
-                experimentalWobbleGoalRoutine(centerB, backPoseB);
+                wobbleRoutine(centerB, backPoseB);
+//                experimentalWobbleGoalRoutine(centerB, backPoseB);
                 break;
 
             case LABEL_FIRST_ELEMENT: // 4 rings, case "C", "Quad"
@@ -295,8 +295,8 @@ public class AutonomousRemote extends LinearOpMode {
                 actuation.stopIntake();
                 actuation.killFlywheel();
 
-//                wobbleRoutine(centerC, backPoseC);
-                experimentalWobbleGoalRoutine(centerC, backPoseC);
+                wobbleRoutine(centerC, backPoseC);
+//                experimentalWobbleGoalRoutine(centerC, backPoseC);
                 break;
         }
     }

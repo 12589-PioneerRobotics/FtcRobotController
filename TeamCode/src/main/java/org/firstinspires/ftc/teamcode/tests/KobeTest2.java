@@ -14,6 +14,7 @@ import com.qualcomm.robotcore.hardware.Servo;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.teamcode.core.ActuationConstants;
+import org.firstinspires.ftc.teamcode.core.DriveConstants;
 import org.firstinspires.ftc.teamcode.core.StandardMechanumDrive;
 import org.firstinspires.ftc.teamcode.core.gamepad.GamepadEventPS;
 
@@ -31,11 +32,12 @@ import static org.firstinspires.ftc.teamcode.core.ActuationConstants.Target.POWE
 import static org.firstinspires.ftc.teamcode.core.ActuationConstants.Target.POWER_SHOT_MIDDLE;
 import static org.firstinspires.ftc.teamcode.core.ActuationConstants.Target.POWER_SHOT_RIGHT;
 import static org.firstinspires.ftc.teamcode.core.ActuationConstants.shooterPIDF;
+import static org.firstinspires.ftc.teamcode.core.ActuationConstants.toMeters;
+import static org.firstinspires.ftc.teamcode.core.DriveConstants.encoderTicksToInches;
 import static org.firstinspires.ftc.teamcode.core.FieldConstants.autonStartPose;
 import static org.firstinspires.ftc.teamcode.core.FieldConstants.leftPowerShot;
 
 @Config
-@Disabled
 @TeleOp(name = "Kobe Test Part 2")
 public class KobeTest2 extends OpMode {
     DcMotorEx shooter;
@@ -78,7 +80,7 @@ public class KobeTest2 extends OpMode {
         drive.setPoseEstimate(autonStartPose);
         shooter.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, shooterPIDF);
         dashboardTelemetry = FtcDashboard.getInstance();
-        telemetry = dashboardTelemetry.getTelemetry();
+//        telemetry = dashboardTelemetry.getTelemetry();
     }
 
     @Override
@@ -137,6 +139,7 @@ public class KobeTest2 extends OpMode {
         shooter.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, shooterPIDF);
 
         shooter.setVelocity(angularVelocity, AngleUnit.RADIANS);
+        telemetry.addData("Velocity (m/s) ??", toMeters(encoderTicksToInches(shooter.getVelocity())));
         telemetry.addLine("Use dPad Up/Down to change motor speed");
         telemetry.addData("Set velocity (rad/s)", angularVelocity);
         telemetry.addData("Actual velocity (rad/s)", shooter.getVelocity(AngleUnit.RADIANS));

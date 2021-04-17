@@ -55,7 +55,7 @@ public class TeleOp extends OpMode {
         SharedPreferences prefs = hardwareMap.appContext.getSharedPreferences("Auton end pose", Context.MODE_PRIVATE);
         startPose = new Pose2d(prefs.getLong("x", 12), prefs.getLong("y", 0), prefs.getLong("heading", (long)toRadians(-90)));
         drive.setPoseEstimate(startPose);
-        actuation = new Actuation(hardwareMap, drive, null);
+        actuation = new Actuation(hardwareMap, drive, null, this);
         update1 = new GamepadEventPS(gamepad1);
 //        update2 = new GamepadEventPS(gamepad2);
 //        actuation.preheatShooter(TOWER_GOAL);
@@ -193,9 +193,10 @@ public class TeleOp extends OpMode {
             actuation.killFlywheel();
 
         /* Uncomment for localization debugging
-        telemetry.addData("cross", drive.getPoseEstimate().getX());
+        telemetry.addData("x", drive.getPoseEstimate().getX());
         telemetry.addData("y", drive.getPoseEstimate().getY());
         telemetry.addData("heading", drive.getPoseEstimate().getHeading());*/
+        telemetry.addData("Rings" ,actuation.getRings());
         telemetry.addData("Inverse slow mode", reverseSlowMode? "On" : "Off");
         telemetry.addData("Slow Mode", normalslowMode ? "On" : "Off");
         telemetry.addData("Targeting", targettingTowerGoal ? "Tower" : "Power Shots");

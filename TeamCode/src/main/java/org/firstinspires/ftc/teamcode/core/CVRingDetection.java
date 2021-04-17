@@ -29,7 +29,7 @@ public class CVRingDetection extends OpenCvPipeline {
         Mat hierarchy = new Mat();
         Imgproc.findContours(contourSrc, contours, hierarchy, Imgproc.RETR_LIST, Imgproc.CHAIN_APPROX_SIMPLE);
 
-        if(!contours.isEmpty()) {
+        if(contours.isEmpty()) {
             ringCase = "None";
         }
         else {

@@ -3,6 +3,8 @@ package org.firstinspires.ftc.teamcode.core;
 import com.acmerobotics.roadrunner.geometry.Pose2d;
 import com.qualcomm.hardware.rev.RevColorSensorV3;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
+import com.qualcomm.robotcore.eventloop.opmode.OpMode;
+import com.qualcomm.robotcore.hardware.ColorSensor;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.HardwareMap;
@@ -44,34 +46,45 @@ import static org.firstinspires.ftc.teamcode.core.FieldConstants.rightPowerShot;
 public class Actuation {
 
     DcMotorEx shoot;
-    DcMotor intake;
+    DcMotor intake, backIntakeBelt;
     public Servo wobbleGrab, wobbleArm, feeder;
     HardwareMap hardwareMap;
     StandardMechanumDrive drive;
     LinearOpMode linearOpMode;
-    RevColorSensorV3 colorsensor;
+    OpMode opMode;
+    ColorSensor colorsensor;
     boolean shot;
+
+    int rings = 0;
+    double ringRuntime = 0;
 
     /**
      * For Autonomous initialization specifically.
      */
     public Actuation(LinearOpMode linearOpMode, StandardMechanumDrive drive) {
-        this(linearOpMode.hardwareMap, drive, linearOpMode);
+        this(linearOpMode.hardwareMap, drive, linearOpMode, null);
         this.linearOpMode = linearOpMode;
     }
 
     /**
      * For TeleOp initialization specifically.
      */
-    public Actuation(HardwareMap hardwareMap, StandardMechanumDrive drive, LinearOpMode linearOpMode) {
+    public Actuation(HardwareMap hardwareMap, StandardMechanumDrive drive, LinearOpMode linearOpMode, OpMode opMode) {
         this.hardwareMap = hardwareMap;
         this.drive = drive;
         this.linearOpMode = linearOpMode;
+        this.opMode = opMode;
 
         if (hardwareMap.dcMotor.contains("intake")) {
             intake = hardwareMap.dcMotor.get("intake");
             intake.setMode(STOP_AND_RESET_ENCODER);
             intake.setMode(RUN_WITHOUT_ENCODER);
+        }
+
+        if(hardwareMap.dcMotor.contains("backIntakeBelt")) {
+            backIntakeBelt = hardwareMap.dcMotor.get("backIntakeBelt");
+            backIntakeBelt.setMode(STOP_AND_RESET_ENCODER);
+            backIntakeBelt.setMode(RUN_WITHOUT_ENCODER);
         }
 
         if (hardwareMap.dcMotor.contains("shooter")) {
@@ -96,7 +109,7 @@ public class Actuation {
         }
 
         if (hardwareMap.colorSensor.contains("colorSensor")) {
-            colorsensor = hardwareMap.get(RevColorSensorV3.class, "colorSensor");
+            colorsensor = hardwareMap.colorSensor.get( "colorSensor");
         }
 
         if (hardwareMap.servo.contains("feeder")) {
@@ -120,9 +133,22 @@ public class Actuation {
         }
     }
 
-    public boolean hasRings() {
-        if (colorsensor == null) return false;
-        return Math.abs(colorsensor.getNormalizedColors().red - 170) > 20;
+    public boolean checkRings() {
+        if(colorsensor == null) return false;
+        if(colorsensor.red() > 50 && (opMode.getRuntime() - ringRuntime) > 0.5) {
+            ringRuntime = opMode.getRuntime();
+            if(rings == 3) {
+                spitOut();
+                return true;
+            }
+            rings += 1;
+            return true;
+        }
+        return false;
+    }
+
+    public int getRings() {
+        return rings;
     }
 
     /**
@@ -279,8 +305,9 @@ public class Actuation {
     // All Intake Operations
 
     public void suck() {
-        if (intake != null)
-            intake.setPower(1);
+        if (intake == null || backIntakeBelt == null || rings == 3) return;
+        intake.setPower(1);
+        backIntakeBelt.setPower(1);
     }
 
     public void stopIntake() {

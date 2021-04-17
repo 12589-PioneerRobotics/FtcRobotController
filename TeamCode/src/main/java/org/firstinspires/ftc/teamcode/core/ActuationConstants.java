@@ -79,5 +79,5 @@ public class ActuationConstants {
      * @param in Length, in inches
      * @return Length, in meters
      */
-    static double toMeters(double in) { return in / 39.3700787; }
+    public static double toMeters(double in) { return in / 39.3700787; }
 }

@@ -1,10 +1,10 @@
 package org.firstinspires.ftc.teamcode.core;
 
+
 import org.opencv.core.Core;
 import org.opencv.core.Mat;
 import org.opencv.core.MatOfPoint;
 import org.opencv.core.MatOfPoint2f;
-import org.opencv.core.Point;
 import org.opencv.core.Rect;
 import org.opencv.core.Scalar;
 import org.opencv.imgproc.Imgproc;
@@ -48,7 +48,7 @@ public class CVShooting extends OpenCvPipeline {
         Mat hierarchy = new Mat();
         Imgproc.findContours(contourSrc, contours, hierarchy, Imgproc.RETR_LIST, Imgproc.CHAIN_APPROX_SIMPLE);
 
-        if (!contours.isEmpty()) {
+        if (contours.isEmpty()) {
 //            ringCase = "None";
         } else {
             int largestContourIndex = 0;

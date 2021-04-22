@@ -123,7 +123,7 @@ public class AutonomousRemote extends LinearOpMode {
         actuation.wobbleArmUp();
 
         // Go back to start area to get 2nd wobble, go back to same square
-        while(!centerToBackTask.isDone());
+        while (!centerToBackTask.isDone()) ;
         Trajectory centerToBack = centerToBackTask.get();
         drive.followTrajectory(centerToBack);
 
@@ -131,8 +131,8 @@ public class AutonomousRemote extends LinearOpMode {
         Pose2d finalCenterAgain = centerAgain;
         Future<Trajectory> backToCenterTask = drive.trajectory(() ->
                 drive.trajectoryBuilder(drive.getPoseEstimate(), drive.getPoseEstimate().getHeading())
-                .splineToLinearHeading(finalCenterAgain, toRadians(180))
-                .build());
+                        .splineToLinearHeading(finalCenterAgain, toRadians(180))
+                        .build());
 
         // Collect 2nd wobble (right side), go back to drop off second wobble and place it
         actuation.wobbleArmDown();
@@ -141,7 +141,7 @@ public class AutonomousRemote extends LinearOpMode {
         sleep(750);
         actuation.wobbleArmSlightltyUp();
 
-        while(!backToCenterTask.isDone());
+        while (!backToCenterTask.isDone()) ;
         Trajectory backToCenter = backToCenterTask.get();
         drive.followTrajectory(backToCenter);
         actuation.placeWobble();
@@ -241,8 +241,7 @@ public class AutonomousRemote extends LinearOpMode {
 
                 Future<Trajectory> startToRingsTask = drive.trajectory(
                         () -> drive.trajectoryBuilder(
-                                drive
-                                        .getPoseEstimate())
+                                drive.getPoseEstimate())
                                 .splineToLinearHeading(new Pose2d(0, -30), 0)
                                 .build());
 

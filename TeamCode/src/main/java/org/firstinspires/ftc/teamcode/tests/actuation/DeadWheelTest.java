@@ -5,7 +5,6 @@ import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
 
-@Disabled
 @TeleOp(name = "Deadwheel Test", group = "Tests")
 public class DeadWheelTest extends OpMode {
     DcMotor rightDeadwheel;
@@ -14,7 +13,7 @@ public class DeadWheelTest extends OpMode {
 
     @Override
     public void init() {
-        leftDeadwheel = hardwareMap.dcMotor.get("left_deadwheel");
+        leftDeadwheel = hardwareMap.dcMotor.get("backIntakeBelt");
         rightDeadwheel = hardwareMap.dcMotor.get("backLeft");
         sidewaysDeadwheel = hardwareMap.dcMotor.get("sideways_deadwheel");
 

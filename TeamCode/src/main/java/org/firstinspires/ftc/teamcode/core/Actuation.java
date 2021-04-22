@@ -110,6 +110,7 @@ public class Actuation {
 
         if (hardwareMap.colorSensor.contains("colorSensor")) {
             colorsensor = hardwareMap.colorSensor.get( "colorSensor");
+            colorsensor.enableLed(true);
         }
 
         if (hardwareMap.servo.contains("feeder")) {
@@ -307,17 +308,20 @@ public class Actuation {
     public void suck() {
         if (intake == null || backIntakeBelt == null || rings == 3) return;
         intake.setPower(1);
-        backIntakeBelt.setPower(1);
+        backIntakeBelt.setPower(-1);
     }
 
     public void stopIntake() {
-        if (intake != null)
-            intake.setPower(0);
+        if (intake == null || backIntakeBelt == null) return;
+        intake.setPower(0);
+        backIntakeBelt.setPower(0);
     }
 
     public void spitOut() {
-        if (intake != null)
-            intake.setPower(-1);
+        if (intake == null | backIntakeBelt == null) return;
+        intake.setPower(-1);
+        backIntakeBelt.setPower(1);
+
     }
 
 

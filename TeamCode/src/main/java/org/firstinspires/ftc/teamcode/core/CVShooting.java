@@ -18,11 +18,12 @@ import java.util.Collections;
 
 import static org.opencv.imgproc.Imgproc.COLOR_RGB2HLS;
 import static org.opencv.imgproc.Imgproc.boundingRect;
+import static org.opencv.imgproc.Imgproc.contourArea;
 
 public class CVShooting extends OpenCvPipeline {
 
-    private final double centerX = 50;
-    private final double rangeX = 40;
+    private final double centerX = 120;
+    private final double rangeX = 15;
     private final Scalar red = new Scalar(255, 0, 0);
     private final Scalar green = new Scalar(0, 255, 0);
     private final Scalar blue = new Scalar(0, 0, 255);
@@ -33,10 +34,8 @@ public class CVShooting extends OpenCvPipeline {
 
     private ArrayList<MatOfPoint> contours = new ArrayList<>();
 
-    private boolean isAligned;
-
     public boolean isAligned() {
-        return isAligned;
+        return (targetCenter < centerX + rangeX && targetCenter > centerX - rangeX);
     }
 
     public ActuationConstants.Target getTarget() {
@@ -61,30 +60,33 @@ public class CVShooting extends OpenCvPipeline {
         Mat hls = new Mat();
         Imgproc.cvtColor(input, hls, COLOR_RGB2HLS);
 
+
         int height = input.height();
         int width = input.width();
 
         // Shooting bounds
-        Imgproc.line(input, new Point(centerX + rangeX,0), new Point(centerX + rangeX, height), orange);
-        Imgproc.line(input, new Point(centerX - rangeX,0), new Point(centerX - rangeX, height), orange);
+        Imgproc.line(input, new Point(centerX + rangeX,0), new Point(centerX + rangeX, height), orange, 3);
+        Imgproc.line(input, new Point(centerX - rangeX,0), new Point(centerX - rangeX, height), orange, 3);
 
         Mat contourSrc = new Mat();
-//        Core.inRange(hls, new Scalar(28, 50, 50), new Scalar(45, 255, 255), contourSrc);
 
         // Finding all red pixels in the source image
         Mat bw1 = new Mat();
         Mat bw2 = new Mat();
-        Core.inRange(hls, new Scalar(0, 15,40), new Scalar(12, 255, 255), bw1);
-        Core.inRange(hls, new Scalar(170, 70, 50), new Scalar(180, 255, 255), bw2);
+        Core.inRange(hls, new Scalar(0, 0, 20), new Scalar(12, 255, 255), bw1);
+        Core.inRange(hls, new Scalar(170, 0, 20), new Scalar(180, 255, 255), bw2);
         Core.add(bw1, bw2, contourSrc);
 
         Mat hierarchy = new Mat();
-        Imgproc.findContours(contourSrc, contours, hierarchy, Imgproc.RETR_LIST, Imgproc.CHAIN_APPROX_SIMPLE);
+        contours = new ArrayList<>();
+        Imgproc.findContours(contourSrc, contours, hierarchy, Imgproc.RETR_TREE, Imgproc.CHAIN_APPROX_SIMPLE);
 
-        if (contours.size() == 3 || contours.size() == 4) {
+        if (!contours.isEmpty()) {
             int largestContourIndex = 0;
             ArrayList<Rect> boundingRects = new ArrayList<>();
             ArrayList<Double> centers = new ArrayList<>();
+
+            contours.removeIf(a -> contourArea(a) < 60);
 
             for (int i = 0; i < contours.size(); i++) {
                 // This will prob work to get the tower goal
@@ -125,15 +127,10 @@ public class CVShooting extends OpenCvPipeline {
                     break;
             }
         }
-        else if (!contours.isEmpty()){
-            Imgproc.drawContours(input, contours, -1, green);
-            telemetry.addLine("Incorrect # objects detected");
-            telemetry.update();
-        }
         else {
+//            Imgproc.drawContours(input, contours, -1, green);
             telemetry.addLine("Incorrect # objects detected");
             telemetry.update();
-
         }
 
         return input;

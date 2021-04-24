@@ -112,21 +112,17 @@ public class AutonomousRemote extends LinearOpMode {
                         .build()
         );
 
-        Future<Trajectory> centerToBackTask = drive.trajectory(() -> {
-            drive.trajectoryBuilder(drive.getPoseEstimate(), toRadians(180))
-                    .splineToLinearHeading(back, toRadians(180))
-                    .build();
-        });
+        Future<Trajectory> centerToBackTask = drive.trajectory(() ->
+                drive.trajectoryBuilder(drive.getPoseEstimate(), toRadians(180))
+                .splineToLinearHeading(back, toRadians(180))
+                .build());
 
         actuation.wobbleClawOpen();
         sleep(550);
         actuation.wobbleArmUp();
 
         // Go back to start area to get 2nd wobble, go back to same square
-        while (!centerToBackTask.isDone()) ;
-        Trajectory centerToBack = centerToBackTask.get();
-        drive.followTrajectory(centerToBack);
-
+        drive.followTrajectory(centerToBackTask.get());
 
         Pose2d finalCenterAgain = centerAgain;
         Future<Trajectory> backToCenterTask = drive.trajectory(() ->
@@ -187,32 +183,6 @@ public class AutonomousRemote extends LinearOpMode {
         drive.followTrajectory(trajectory);
 
         actuation.placeWobble();
-
-/*        actuation.wobbleClawOpen();
-        sleep(550);
-        actuation.wobbleArmUp();
-
-        // Go back to start area to get 2nd wobble, go back to same square
-*//*        drive.followTrajectory(
-                drive.trajectoryBuilder(drive.getPoseEstimate(), toRadians(180))
-                        .splineToLinearHeading(back, toRadians(180))
-//                        .splineTo(back.vec(), toRadians(180))
-                        .build()
-        );*//*
-
-        // Collect 2nd wobble (right side), go back to drop off second wobble and place it
-        actuation.wobbleArmDown();
-        sleep(1000);
-        actuation.wobbleClawClose();
-        sleep(750);
-        actuation.wobbleArmSlightltyUp();
-
-*//*        drive.followTrajectory(
-                drive.trajectoryBuilder(drive.getPoseEstimate(), drive.getPoseEstimate().getHeading())
-                        .splineToLinearHeading(centerAgain, toRadians(180))
-                        .build()
-        );*//*
-        actuation.placeWobble();*/
     }
 
     private void performCase(String ringCase) throws ExecutionException, InterruptedException {

@@ -42,11 +42,15 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.FutureTask;
 
 import javax.security.auth.callback.Callback;
+
+import kotlin.jvm.internal.Lambda;
 
 import static org.firstinspires.ftc.teamcode.core.DriveConstants.MAX_ACCEL;
 import static org.firstinspires.ftc.teamcode.core.DriveConstants.MAX_ANG_ACCEL;
@@ -186,8 +190,8 @@ public class StandardMechanumDrive extends MecanumDrive {
         return new TrajectoryBuilder(startPose, startTangent, velConstraint, accelConstraint);
     }
 
-    public Future<Trajectory> trajectory(Runnable runnable) {
-        return (Future<Trajectory>) threadpool.submit(runnable);
+    public FutureTask<Trajectory> trajectory(Callable<Trajectory> callable) {
+        return (FutureTask<Trajectory>) threadpool.submit(callable);
     }
 
     public void turnAsync(double angle) {

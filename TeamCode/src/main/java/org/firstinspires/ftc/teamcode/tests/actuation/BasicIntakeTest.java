@@ -62,7 +62,7 @@ public class BasicIntakeTest extends OpMode {
 
         frontIntake.setPosition(frontIntakePosition);
 
-        /*Vector2d input = new Vector2d(
+        Vector2d input = new Vector2d(
                 -gamepad1.left_stick_y,
                 -gamepad1.left_stick_x).rotated(-drive.getPoseEstimate().getHeading());
 
@@ -72,20 +72,20 @@ public class BasicIntakeTest extends OpMode {
                         input.getY(),
                         -gamepad1.right_stick_x
                 )
-        );*/
+        );
 
         if(update.dPadRight())
             speedMultiplier += increment;
         if(update.dPadLeft())
             speedMultiplier -= increment;
 
-        drive.setDrivePower(
+        /*drive.setDrivePower(
                 new Pose2d(
                         powerScale(gamepad1.left_stick_y, speedMultiplier),
                         powerScale(gamepad1.left_stick_x, speedMultiplier),
                         -powerScale(gamepad1.right_stick_x, speedMultiplier)
                 )
-        );
+        );*/
 
 
         /*if(colorSensor.red() > 50 && !inside) {

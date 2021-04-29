@@ -52,7 +52,7 @@ public class Actuation {
     StandardMechanumDrive drive;
     LinearOpMode linearOpMode;
     OpMode opMode;
-    ColorSensor colorsensor;
+    RevColorSensorV3 colorsensor;
     boolean shot;
 
     int rings = 0;
@@ -109,7 +109,7 @@ public class Actuation {
         }
 
         if (hardwareMap.colorSensor.contains("colorSensor")) {
-            colorsensor = hardwareMap.colorSensor.get( "colorSensor");
+            colorsensor = hardwareMap.get( RevColorSensorV3.class, "colorSensor");
             colorsensor.enableLed(true);
         }
 

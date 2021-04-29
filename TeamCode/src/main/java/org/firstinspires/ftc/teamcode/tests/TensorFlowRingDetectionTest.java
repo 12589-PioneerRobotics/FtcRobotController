@@ -31,12 +31,14 @@ package org.firstinspires.ftc.teamcode.tests;
 
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
+import com.qualcomm.robotcore.hardware.Servo;
 
 import org.firstinspires.ftc.robotcore.external.ClassFactory;
 import org.firstinspires.ftc.robotcore.external.navigation.VuforiaLocalizer;
 import org.firstinspires.ftc.robotcore.external.navigation.VuforiaLocalizer.CameraDirection;
 import org.firstinspires.ftc.robotcore.external.tfod.Recognition;
 import org.firstinspires.ftc.robotcore.external.tfod.TFObjectDetector;
+import org.firstinspires.ftc.teamcode.core.gamepad.GamepadEventPS;
 
 import java.util.List;
 
@@ -84,6 +86,10 @@ public class TensorFlowRingDetectionTest extends LinearOpMode {
      */
     private TFObjectDetector tfod;
 
+    Servo cameraServo;
+    GamepadEventPS update;
+    double cameraPos = 0.5;
+
     @Override
     public void runOpMode() {
         // The TFObjectDetector uses the camera frames from the VuforiaLocalizer, so we create that
@@ -112,10 +118,25 @@ public class TensorFlowRingDetectionTest extends LinearOpMode {
         /** Wait for the game to begin */
         telemetry.addData(">", "Press Play to start op mode");
         telemetry.update();
+        cameraServo = hardwareMap.servo.get("cameraServo");
+        update = new GamepadEventPS(gamepad1); //good position here is .675
+
+
         waitForStart();
 
         if (opModeIsActive()) {
             while (opModeIsActive()) {
+
+                if (update.dPadLeft())
+                    cameraPos -= 0.025;
+                if (update.dPadRight())
+                    cameraPos += 0.025;
+
+                cameraServo.setPosition(cameraPos);
+                telemetry.addLine("Press circle to get out of loop");
+                telemetry.addData("Camera pos", cameraServo.getPosition());
+                telemetry.update();
+
                 if (tfod != null) {
                     // getUpdatedRecognitions() will return null if no new information is available since
                     // the last time that call was made.

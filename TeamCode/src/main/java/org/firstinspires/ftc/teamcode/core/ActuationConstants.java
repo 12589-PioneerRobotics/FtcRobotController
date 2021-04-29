@@ -29,7 +29,7 @@ public class ActuationConstants {
 
 
     public static double FEEDER_REST = 0.375;
-    public static double FEEDER_YEET = 0.575;
+    public static double FEEDER_YEET = 0.58;
 
     //TODO: Get a better measurement of power shot heights, considering the slant.
     static final double POWER_SHOT_FIRE_VERTICAL_DISPLACEMENT = toMeters(23.5) - LAUNCHER_HEIGHT;

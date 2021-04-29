@@ -3,6 +3,7 @@ package org.firstinspires.ftc.teamcode.tests;
 import com.acmerobotics.roadrunner.geometry.Pose2d;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
+import com.qualcomm.robotcore.hardware.Servo;
 
 import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
 import org.firstinspires.ftc.teamcode.core.Actuation;
@@ -27,6 +28,7 @@ public class CVShootTest extends OpMode {
     int currentTargetIndex = 0;
     OpenCvWebcam webcam;
     boolean turning = false;
+    Servo cameraServo;
 
 
     @Override
@@ -34,12 +36,14 @@ public class CVShootTest extends OpMode {
         frame = new CVShooting(ActuationConstants.Target.values()[currentTargetIndex], telemetry);
         update = new GamepadEventPS(gamepad1);
         drive = new StandardMechanumDrive(hardwareMap);
+        cameraServo = hardwareMap.servo.get("cameraServo");
+        cameraServo.setPosition(0.775);
         actuation = new Actuation(hardwareMap, drive, null, this);
 
         int cameraMonitorViewId = hardwareMap.appContext.getResources().getIdentifier("cameraMonitorViewId", "id", hardwareMap.appContext.getPackageName());
         webcam = OpenCvCameraFactory.getInstance().createWebcam(hardwareMap.get(WebcamName.class,"Webcam 1"), cameraMonitorViewId);
         webcam.setPipeline(frame);
-        webcam.openCameraDeviceAsync(() -> webcam.startStreaming(320, 240, OpenCvCameraRotation.UPRIGHT));
+        webcam.openCameraDeviceAsync(() -> webcam.startStreaming(640, 480, OpenCvCameraRotation.UPRIGHT));
     }
 
     @Override
@@ -50,7 +54,7 @@ public class CVShootTest extends OpMode {
                 currentTargetIndex -= 1;
         }
         if (update.dPadRight()) {
-            if (currentTargetIndex != ActuationConstants.Target.values().length - 1)
+            if (currentTargetIndex != ActuationConstants.Target.values().length - 1)//
                 currentTargetIndex += 1;
         }
 
@@ -80,10 +84,12 @@ public class CVShootTest extends OpMode {
                 drive.setWeightedDrivePower(new Pose2d(0,0,0));
                 actuation.preheatShooter(-4.0);
                 try {
-                    Thread.sleep(500);
+                    Thread.sleep(100);
                     actuation.feeder.setPosition(FEEDER_REST);
                     Thread.sleep(500);
                     actuation.feeder.setPosition(FEEDER_YEET);
+                    Thread.sleep(500);
+                    actuation.feeder.setPosition(FEEDER_REST);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }

@@ -1,6 +1,8 @@
 package org.firstinspires.ftc.teamcode.core;
 
 
+import android.util.Log;
+
 import org.firstinspires.ftc.robotcore.external.Telemetry;
 import org.opencv.core.Core;
 import org.opencv.core.Mat;
@@ -19,16 +21,19 @@ import java.util.Collections;
 import static org.opencv.imgproc.Imgproc.COLOR_RGB2HLS;
 import static org.opencv.imgproc.Imgproc.boundingRect;
 import static org.opencv.imgproc.Imgproc.contourArea;
+import static org.opencv.imgproc.Imgproc.drawMarker;
 
 public class CVShooting extends OpenCvPipeline {
 
-    private final double centerX = 120;
+    private final double centerX = 180;
     private final double rangeX = 15;
     private final Scalar red = new Scalar(255, 0, 0);
     private final Scalar green = new Scalar(0, 255, 0);
+
     private final Scalar blue = new Scalar(0, 0, 255);
     private final Scalar orange = new Scalar(255, 165, 0);
     private double targetCenter = 9999999;
+    private final double offsetAngle = Math.toRadians(10);
 
     Telemetry telemetry;
 
@@ -51,42 +56,61 @@ public class CVShooting extends OpenCvPipeline {
     public CVShooting(ActuationConstants.Target target, Telemetry telemetry) {
         this.target = target;
         this.telemetry = telemetry;
+        hls = new Mat();
+        bw1 = new Mat();
+        bw2 = new Mat();
+        contourSrc = new Mat();
+        hierarchy = new Mat();
     }
+    Mat hls, bw1, bw2, contourSrc, hierarchy, cropped;
+    Rect cropBox;
+
 
     @Override
     public Mat processFrame(Mat input) {
-//        Rect cropBox = new Rect(new Point(0,0), new Point(100,100));
-//        Mat cropped = new Mat(input, cropBox);
-        Mat hls = new Mat();
-        Imgproc.cvtColor(input, hls, COLOR_RGB2HLS);
-
 
         int height = input.height();
         int width = input.width();
 
-        // Shooting bounds
-        Imgproc.line(input, new Point(centerX + rangeX,0), new Point(centerX + rangeX, height), orange, 3);
-        Imgproc.line(input, new Point(centerX - rangeX,0), new Point(centerX - rangeX, height), orange, 3);
+        cropBox = new Rect(new Point(0,60), new Point(width,height));
 
-        Mat contourSrc = new Mat();
+
+
+        Imgproc.drawMarker(input, new Point(0,100), orange ,0);
+        drawMarker(input, new Point(width,height), orange, 0);
+
+        hls = new Mat(input, cropBox);
+        cropped = new Mat(input, cropBox);
+
+//        Mat hls = new Mat();
+
+        Imgproc.cvtColor(cropped, hls, COLOR_RGB2HLS);
+
+
+        // Shooting bounds
+        Imgproc.line(cropped, new Point(centerX + rangeX,0), new Point(centerX + rangeX, height), orange, 3);
+        Imgproc.line(cropped, new Point(centerX - rangeX,0), new Point(centerX - rangeX, height), orange, 3);
+
+//        Mat contourSrc = new Mat();
 
         // Finding all red pixels in the source image
-        Mat bw1 = new Mat();
-        Mat bw2 = new Mat();
-        Core.inRange(hls, new Scalar(0, 0, 20), new Scalar(12, 255, 255), bw1);
-        Core.inRange(hls, new Scalar(170, 0, 20), new Scalar(180, 255, 255), bw2);
+//        Mat bw1 = new Mat();
+//        Mat bw2 = new Mat();
+        Core.inRange(hls, new Scalar(0, 255 * 0.3, 255 * 0.1), new Scalar(12, 204, 255), bw1);
+        Core.inRange(hls, new Scalar(170, 255 * 0.3, 255 * 0.1), new Scalar(180, 204, 255), bw2);
         Core.add(bw1, bw2, contourSrc);
 
-        Mat hierarchy = new Mat();
+//        Mat hierarchy = new Mat();
         contours = new ArrayList<>();
         Imgproc.findContours(contourSrc, contours, hierarchy, Imgproc.RETR_TREE, Imgproc.CHAIN_APPROX_SIMPLE);
+
+        if(!contours.isEmpty()) contours.removeIf(a -> contourArea(a) < 30);
+
 
         if (!contours.isEmpty()) {
             int largestContourIndex = 0;
             ArrayList<Rect> boundingRects = new ArrayList<>();
             ArrayList<Double> centers = new ArrayList<>();
-
-            contours.removeIf(a -> contourArea(a) < 60);
 
             for (int i = 0; i < contours.size(); i++) {
                 // This will prob work to get the tower goal
@@ -99,9 +123,39 @@ public class CVShooting extends OpenCvPipeline {
                 centers.add(centerRect(boundingRects.get(i)));
             }
             Rect largestBoundingRect = boundingRect(new MatOfPoint2f(contours.get(largestContourIndex).toArray()));
-            Imgproc.rectangle(input, largestBoundingRect.br(), largestBoundingRect.tl(), blue, 2);
-            Imgproc.drawContours(input, contours, -1, green);
-            Imgproc.drawContours(input, contours, largestContourIndex, blue);
+
+
+            /*contours.removeIf(a -> {
+                double centerLargest = centerRect(largestBoundingRect);
+                double centerContour = centerRect(boundingRect(a));
+                double halfWidth = largestBoundingRect.width / 2.0;
+                return (centerLargest + halfWidth) > centerContour && (centerLargest - halfWidth) < centerLargest;
+            });
+
+            if(contours.isEmpty()) return input;*/
+
+            /*int finalLargestContourIndex = largestContourIndex;
+            contours.removeIf(a -> {
+               Rect boundingRect = boundingRect(a);
+               return boundingRect.width > boundingRect.height && contours.indexOf(a) != finalLargestContourIndex;
+            });
+            if(contours.isEmpty()) return input;*/
+
+            /*for (int i = 0; i < contours.size(); i++) {
+                // This will prob work to get the tower goal
+                if(i > 0) {
+                    if (Imgproc.contourArea(contours.get(i)) > Imgproc.contourArea(contours.get(largestContourIndex))) {
+                        largestContourIndex = i;
+                    }
+                }
+                boundingRects.add(boundingRect(new MatOfPoint2f(contours.get(i).toArray())));
+                centers.add(centerRect(boundingRects.get(i)));
+            }*/
+
+            Imgproc.rectangle(cropped, largestBoundingRect.br(), largestBoundingRect.tl(), blue, 2);
+            Imgproc.drawContours(cropped, contours, -1, green);
+            Log.v("largest coontour index", String.valueOf(largestContourIndex));
+            Imgproc.drawContours(cropped, contours, largestContourIndex, blue);
 
             // Big assumption here: In order for power shots to be effective, all of them need to be in view of the camera.
             switch (target) {
@@ -133,7 +187,7 @@ public class CVShooting extends OpenCvPipeline {
             telemetry.update();
         }
 
-        return input;
+        return cropped;
     }
 
     public int getContourCount() {

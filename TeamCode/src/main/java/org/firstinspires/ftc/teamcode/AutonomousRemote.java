@@ -146,7 +146,7 @@ public class AutonomousRemote extends LinearOpMode {
     public void experimentalWobbleGoalRoutine(Pose2d center, Pose2d back) {
         // centerPose is a pose of the square's center (A/B/C), backPose is the position the robot will be in to collect the second wobble goal
         Pose2d centerAgain = center;
-        centerAgain = new Pose2d(centerAgain.getX() - 10, centerAgain.getY() + 5, centerAgain.getHeading());
+        centerAgain = new Pose2d(centerAgain.getX() - 7, centerAgain.getY() + 5, centerAgain.getHeading());
 
         double limiter = 0.5;
         MinVelocityConstraint velConstraint = new MinVelocityConstraint(Arrays.asList(
@@ -189,7 +189,7 @@ public class AutonomousRemote extends LinearOpMode {
         Trajectory startToRings;
         switch (ringCase) {
             case "None": // Zero rings, case "A"
-                actuation.preheatShooter(-3.88);
+                actuation.preheatShooter(-3.9);
 
                 startToRings = drive.trajectoryBuilder(drive.getPoseEstimate()).splineToLinearHeading(new Pose2d(0, -30), 0).build();
                 drive.followTrajectory(startToRings);

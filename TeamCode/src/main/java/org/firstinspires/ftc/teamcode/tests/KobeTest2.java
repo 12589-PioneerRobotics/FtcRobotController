@@ -92,7 +92,7 @@ public class KobeTest2 extends OpMode {
             angularVelocity -= .05;
 
         if(gamepad1.left_bumper)
-            feeder.setPosition(FEEDER_YEET);
+            feeder.setPosition(feederPos);
         else
             feeder.setPosition(FEEDER_REST);
 
@@ -138,12 +138,13 @@ public class KobeTest2 extends OpMode {
 
         shooter.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, shooterPIDF);
 
+//        feeder.setPosition(feederPos);
         shooter.setVelocity(angularVelocity, AngleUnit.RADIANS);
         telemetry.addData("Velocity (m/s) ??", toMeters(encoderTicksToInches(shooter.getVelocity())));
         telemetry.addLine("Use dPad Up/Down to change motor speed");
         telemetry.addData("Set velocity (rad/s)", angularVelocity);
         telemetry.addData("Actual velocity (rad/s)", shooter.getVelocity(AngleUnit.RADIANS));
-//        telemetry.addData("Feeder pos")
+        telemetry.addData("Feeder pos", feeder.getPosition());
 
         /*telemetry.addData("x", poseEstimate.getX());
         telemetry.addData("y", poseEstimate.getY());

@@ -35,6 +35,7 @@ import static org.firstinspires.ftc.teamcode.core.FieldConstants.backPoseC;
 import static org.firstinspires.ftc.teamcode.core.FieldConstants.centerA;
 import static org.firstinspires.ftc.teamcode.core.FieldConstants.centerB;
 import static org.firstinspires.ftc.teamcode.core.FieldConstants.centerC;
+import static org.firstinspires.ftc.teamcode.core.FieldConstants.leftOfRingPos;
 import static org.firstinspires.ftc.teamcode.core.FieldConstants.ringPos;
 import static org.firstinspires.ftc.teamcode.core.TensorFlowRingDetection.LABEL_FIRST_ELEMENT;
 import static org.firstinspires.ftc.teamcode.core.TensorFlowRingDetection.LABEL_SECOND_ELEMENT;
@@ -137,7 +138,6 @@ public class AutonomousRemote extends LinearOpMode {
         sleep(750);
         actuation.wobbleArmSlightltyUp();
 
-        while (!backToCenterTask.isDone()) ;
         Trajectory backToCenter = backToCenterTask.get();
         drive.followTrajectory(backToCenter);
         actuation.placeWobble();
@@ -218,7 +218,6 @@ public class AutonomousRemote extends LinearOpMode {
 
 //                actuation.preheatShooter(TOWER_GOAL);
                 actuation.suck();
-                while (!startToRingsTask.isDone() && opModeIsActive()) ;
                 startToRings = startToRingsTask.get();
                 drive.followTrajectory(startToRings);
 
@@ -240,28 +239,41 @@ public class AutonomousRemote extends LinearOpMode {
             case LABEL_FIRST_ELEMENT: // 4 rings, case "C", "Quad"
 
                 actuation.preheatShooter(-3.91);
-                drive.followTrajectory(drive.trajectoryBuilder(drive.getPoseEstimate()).forward(12).build());
+                /*drive.followTrajectory(drive.trajectoryBuilder(drive.getPoseEstimate()).forward(12).build());
                 sleep(400);
                 actuation.shoot(TOWER_GOAL, 0.17);
-                sleep(400);
+                sleep(400);*/
 
-                startToRings = drive.trajectoryBuilder(drive.getPoseEstimate()).splineToConstantHeading(ringPos, 0).build();
+//                startToRings = drive.trajectoryBuilder(drive.getPoseEstimate()).splineToConstantHeading(ringPos, 0).build();
 
-                actuation.shootInPlace(2);
-                actuation.preheatShooter(POWER_SHOT_RIGHT);
-                actuation.suck();
+                startToRings = drive.trajectoryBuilder(drive.getPoseEstimate())
+                        .splineToConstantHeading(leftOfRingPos, 270)
+                        .splineToConstantHeading(new Vector2d(10,-30), -45)
+                        .build();
 
                 drive.followTrajectory(startToRings);
-                actuation.stopIntake();
 
-                actuation.preheatShooter(-3.8);
+                actuation.suck();
+                actuation.powerShots();
+
+                /*actuation.shootInPlace(2);
+                actuation.preheatShooter(POWER_SHOT_RIGHT);*/
+
+                drive.followTrajectory(drive.trajectoryBuilder(drive.getPoseEstimate()).back(-10).build());
+                actuation.shoot();
+                actuation.shoot();
+
+                drive.followTrajectory(drive.trajectoryBuilder(drive.getPoseEstimate()).back(-4).build());
+                actuation.shoot();
+                actuation.shoot();
+                actuation.stopIntake();
 
                 //actuation.powerShots(0.14,0.08,0.06);
-                actuation.shoot(TOWER_GOAL, 0.15);
+//                actuation.shoot(TOWER_GOAL, 0.15);
 
-                actuation.shootInPlace(1);
+//                actuation.shootInPlace(1);
 
-                actuation.stopIntake();
+//                actuation.stopIntake();
                 actuation.killFlywheel();
 
                 wobbleRoutine(centerC, backPoseC);

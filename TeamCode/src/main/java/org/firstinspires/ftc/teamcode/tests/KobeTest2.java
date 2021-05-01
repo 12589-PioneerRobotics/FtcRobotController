@@ -51,7 +51,7 @@ public class KobeTest2 extends OpMode {
     public static double turnOffsetRight = 0.18;
 
     double feederPosIncrement = .01;
-    double feederPos = 0;
+    double feederPos = FEEDER_YEET;
 
 
     double linearVelocity = 0; // m/s
@@ -80,7 +80,7 @@ public class KobeTest2 extends OpMode {
         drive.setPoseEstimate(autonStartPose);
         shooter.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, shooterPIDF);
         dashboardTelemetry = FtcDashboard.getInstance();
-//        telemetry = dashboardTelemetry.getTelemetry();
+        telemetry = dashboardTelemetry.getTelemetry();
     }
 
     @Override
@@ -116,17 +116,18 @@ public class KobeTest2 extends OpMode {
         if(update.circle()) {
             ActuationConstants.Target[] targets = {POWER_SHOT_RIGHT, POWER_SHOT_MIDDLE, POWER_SHOT_LEFT};
             for (int i = 0; i < 3; i++) {
-                double destination = targets[i].pos().minus(drive.getPoseEstimate().vec()).angle();
-                telemetry.addData("destination", destination);
-                Pose2d pose = drive.getPoseEstimate();
-                drive.turn(destination - ((pose.getHeading() > PI) ? pose.getHeading() - (2 * PI) : pose.getHeading()) - turnOffsets[i]);
-                feeder.setPosition(FEEDER_YEET);
+//                double destination = targets[i].pos().minus(drive.getPoseEstimate().vec()).angle();
+//                telemetry.addData("destination", destination);
+//                Pose2d pose = drive.getPoseEstimate();
+//                drive.turn(destination - ((pose.getHeading() > PI) ? pose.getHeading() - (2 * PI) : pose.getHeading()) - turnOffsets[i]);
+//                feeder.setPosition(FEEDER_YEET);
                 try {
 
-                    Thread.sleep(200);
                     feeder.setPosition(FEEDER_REST);
-                    Thread.sleep((long) Math.max(shootDelayMillis - 100, 0));
-                    feeder.setPosition(FEEDER_YEET);
+                    Thread.sleep((long) Math.max(shootDelayMillis, 0));
+                    feeder.setPosition(feederPos);
+                    Thread.sleep((long) Math.max(shootDelayMillis, 0));
+                    feeder.setPosition(FEEDER_REST);
 
                 } catch (InterruptedException e) {
                     e.printStackTrace();
@@ -145,6 +146,7 @@ public class KobeTest2 extends OpMode {
         telemetry.addData("Set velocity (rad/s)", angularVelocity);
         telemetry.addData("Actual velocity (rad/s)", shooter.getVelocity(AngleUnit.RADIANS));
         telemetry.addData("Feeder pos", feeder.getPosition());
+
 
         /*telemetry.addData("x", poseEstimate.getX());
         telemetry.addData("y", poseEstimate.getY());

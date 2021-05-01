@@ -21,6 +21,7 @@ import static org.firstinspires.ftc.teamcode.core.ActuationConstants.Target.POWE
 import static org.firstinspires.ftc.teamcode.core.ActuationConstants.Target.POWER_SHOT_RIGHT;
 import static org.firstinspires.ftc.teamcode.core.ActuationConstants.Target.TOWER_GOAL;
 import static org.firstinspires.ftc.teamcode.core.FieldConstants.autonStartPose;
+import static org.firstinspires.ftc.teamcode.tests.KobeTest2.shootDelayMillis;
 
 /*
     Controls:
@@ -149,8 +150,20 @@ public class TeleOp extends OpMode {
             actuation.feedRing();
 
 
-        if(update1.circle())
-            actuation.shoot();
+        if(update1.circle()) {
+            for (int i = 0; i < 3; i++) {
+                try {
+                    actuation.feeder.setPosition(FEEDER_REST);
+                    Thread.sleep((long) Math.max(shootDelayMillis, 0));
+                    actuation.feeder.setPosition(FEEDER_YEET);
+                    Thread.sleep((long) Math.max(shootDelayMillis, 0));
+                    actuation.feeder.setPosition(FEEDER_REST);
+
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
 
         if(update1.triangle()) {
             /*ActuationConstants.Target[] targets = {POWER_SHOT_RIGHT, POWER_SHOT_MIDDLE, POWER_SHOT_LEFT};

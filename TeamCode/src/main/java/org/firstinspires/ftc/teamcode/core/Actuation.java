@@ -235,7 +235,7 @@ public class Actuation {
     }
 
     public void powerShots() {
-        powerShots(0.14,0.08,0.06);
+        powerShots(0.12,0.06,0.02);
     }
 
     public void preheatShooter(double velocity) {

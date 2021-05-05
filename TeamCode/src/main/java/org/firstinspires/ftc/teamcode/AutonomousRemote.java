@@ -248,7 +248,7 @@ public class AutonomousRemote extends LinearOpMode {
 
                 startToRings = drive.trajectoryBuilder(drive.getPoseEstimate())
                         .splineToConstantHeading(leftOfRingPos, 270)
-                        .splineToConstantHeading(new Vector2d(10,-30), -45)
+                        .splineToConstantHeading(new Vector2d(-2,-30), 135)
                         .build();
 
                 drive.followTrajectory(startToRings);
@@ -259,11 +259,11 @@ public class AutonomousRemote extends LinearOpMode {
                 /*actuation.shootInPlace(2);
                 actuation.preheatShooter(POWER_SHOT_RIGHT);*/
 
-                drive.followTrajectory(drive.trajectoryBuilder(drive.getPoseEstimate()).back(-10).build());
+                drive.followTrajectory(drive.trajectoryBuilder(drive.getPoseEstimate()).back(14).build());
                 actuation.shoot();
                 actuation.shoot();
 
-                drive.followTrajectory(drive.trajectoryBuilder(drive.getPoseEstimate()).back(-4).build());
+                drive.followTrajectory(drive.trajectoryBuilder(drive.getPoseEstimate()).back(8).build());
                 actuation.shoot();
                 actuation.shoot();
                 actuation.stopIntake();

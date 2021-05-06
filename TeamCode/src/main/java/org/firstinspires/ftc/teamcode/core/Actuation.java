@@ -9,6 +9,7 @@ import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.Servo;
+import com.vuforia.CameraDevice;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 
@@ -21,6 +22,8 @@ import static java.lang.Math.cos;
 import static java.lang.Math.pow;
 import static java.lang.Math.sqrt;
 import static java.lang.Math.tan;
+import static org.firstinspires.ftc.teamcode.core.ActuationConstants.CAMERA_POS_AIM;
+import static org.firstinspires.ftc.teamcode.core.ActuationConstants.CAMERA_POS_RINGS;
 import static org.firstinspires.ftc.teamcode.core.ActuationConstants.FEEDER_REST;
 import static org.firstinspires.ftc.teamcode.core.ActuationConstants.FEEDER_YEET;
 import static org.firstinspires.ftc.teamcode.core.ActuationConstants.FLYWHEEL_RADIUS;
@@ -47,7 +50,7 @@ public class Actuation {
 
     DcMotorEx shoot;
     DcMotor intake, backIntakeBelt;
-    public Servo wobbleGrab, wobbleArm, feeder;
+    public Servo wobbleGrab, wobbleArm, feeder, cameraServo;
     HardwareMap hardwareMap;
     StandardMechanumDrive drive;
     LinearOpMode linearOpMode;
@@ -118,6 +121,21 @@ public class Actuation {
             feeder.setPosition(FEEDER_REST);
         }
         shot = false;
+
+        if(hardwareMap.servo.contains("cameraServo")) {
+            cameraServo = hardwareMap.servo.get("cameraServo");
+            cameraServo.setPosition(CAMERA_POS_RINGS);
+        }
+    }
+
+    public void cameraServoToRings() {
+        if(cameraServo != null)
+            cameraServo.setPosition(CAMERA_POS_RINGS);
+    }
+
+    public void cameraServoToAim() {
+        if(cameraServo != null)
+            cameraServo.setPosition(CAMERA_POS_AIM);
     }
 
 

@@ -68,7 +68,7 @@ public class TensorFlowRingDetection implements Runnable {
         parameters.vuforiaLicenseKey = VUFORIA_KEY;
         parameters.cameraDirection = CameraDirection.BACK;
 
-        //  Instantiate the Vuforia engine
+        // Instantiate the Vuforia engine
         vuforia = ClassFactory.getInstance().createVuforia(parameters);
 
         // Loading trackables is not necessary for the TensorFlow Object Detection engine.
@@ -104,8 +104,7 @@ public class TensorFlowRingDetection implements Runnable {
                 // the last time that call was made.
                 List<Recognition> updatedRecognitions = tfod.getUpdatedRecognitions();
                 if (updatedRecognitions != null) {
-//                        linearOpMode.telemetry.addData("# Object Detected", updatedRecognitions.size());
-
+//                  linearOpMode.telemetry.addData("# Object Detected", updatedRecognitions.size());
                     if (!updatedRecognitions.isEmpty())
                         ringCase = updatedRecognitions.get(0).getLabel();
                     else ringCase = "None";

@@ -246,18 +246,16 @@ public class AutonomousRemote extends LinearOpMode {
 
 //                startToRings = drive.trajectoryBuilder(drive.getPoseEstimate()).splineToConstantHeading(ringPos, 0).build();
 
-                startToRings = drive.trajectoryBuilder(drive.getPoseEstimate())
-                        .splineToConstantHeading(leftOfRingPos, 270)
-                        .splineToConstantHeading(new Vector2d(-2,-30), 135)
+                startToRings = drive.trajectoryBuilder(drive.getPoseEstimate(), toRadians(45))
+                        .splineToConstantHeading(leftOfRingPos, toRadians(135))
+                        .splineToConstantHeading(new Vector2d(-2,-30), toRadians(135))
                         .build();
 
                 drive.followTrajectory(startToRings);
 
-                actuation.suck();
+                /*actuation.suck();
                 actuation.powerShots();
 
-                /*actuation.shootInPlace(2);
-                actuation.preheatShooter(POWER_SHOT_RIGHT);*/
 
                 drive.followTrajectory(drive.trajectoryBuilder(drive.getPoseEstimate()).back(14).build());
                 actuation.shoot();
@@ -268,15 +266,10 @@ public class AutonomousRemote extends LinearOpMode {
                 actuation.shoot();
                 actuation.stopIntake();
 
-                //actuation.powerShots(0.14,0.08,0.06);
-//                actuation.shoot(TOWER_GOAL, 0.15);
 
-//                actuation.shootInPlace(1);
-
-//                actuation.stopIntake();
                 actuation.killFlywheel();
 
-                wobbleRoutine(centerC, backPoseC);
+                wobbleRoutine(centerC, backPoseC);*/
 //                experimentalWobbleGoalRoutine(centerC, backPoseC);
                 break;
         }

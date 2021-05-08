@@ -19,7 +19,7 @@ public class FieldConstants {
 
     // For path coordinates
     public static Vector2d ringPos = new Vector2d(0, -30);
-    public static Vector2d leftOfRingPos = new Vector2d(-14, 0);
+    public static Vector2d leftOfRingPos = new Vector2d(-14, -7);
     public static Pose2d centerA = new Pose2d(12,-44.5, toRadians(90)); // Theoretical: x = 12, y = -48
     public static Pose2d centerB = new Pose2d(32,-20, toRadians(90)); // Theoretical: x = 36, y = -24
     public static Pose2d centerC = new Pose2d(60, -44, toRadians(90)); // Theoretical: x = 60, y = -48

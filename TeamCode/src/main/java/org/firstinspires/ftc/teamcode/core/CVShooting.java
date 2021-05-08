@@ -11,6 +11,7 @@ import org.opencv.core.MatOfPoint2f;
 import org.opencv.core.Point;
 import org.opencv.core.Rect;
 import org.opencv.core.Scalar;
+import org.opencv.core.Size;
 import org.opencv.imgproc.Imgproc;
 import org.openftc.easyopencv.OpenCvPipeline;
 
@@ -19,6 +20,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 
 import static org.opencv.imgproc.Imgproc.COLOR_RGB2HLS;
+import static org.opencv.imgproc.Imgproc.COLOR_RGB2HSV;
 import static org.opencv.imgproc.Imgproc.boundingRect;
 import static org.opencv.imgproc.Imgproc.contourArea;
 import static org.opencv.imgproc.Imgproc.drawMarker;
@@ -56,13 +58,13 @@ public class CVShooting extends OpenCvPipeline {
     public CVShooting(ActuationConstants.Target target, Telemetry telemetry) {
         this.target = target;
         this.telemetry = telemetry;
-        hls = new Mat();
+        hsv = new Mat();
         bw1 = new Mat();
         bw2 = new Mat();
         contourSrc = new Mat();
         hierarchy = new Mat();
     }
-    Mat hls, bw1, bw2, contourSrc, hierarchy, cropped;
+    Mat hsv, bw1, bw2, contourSrc, hierarchy, cropped;
     Rect cropBox;
 
 
@@ -79,32 +81,27 @@ public class CVShooting extends OpenCvPipeline {
         Imgproc.drawMarker(input, new Point(0,100), orange ,0);
         drawMarker(input, new Point(width,height), orange, 0);
 
-        hls = new Mat(input, cropBox);
+        hsv = new Mat(input, cropBox);
         cropped = new Mat(input, cropBox);
 
-//        Mat hls = new Mat();
-
-        Imgproc.cvtColor(cropped, hls, COLOR_RGB2HLS);
-
+        Imgproc.cvtColor(cropped, hsv, COLOR_RGB2HSV);
+        int[] kSize = {3,3};
+        Imgproc.GaussianBlur(hsv,hsv, new Size(3,3), 0);
 
         // Shooting bounds
         Imgproc.line(cropped, new Point(centerX + rangeX,0), new Point(centerX + rangeX, height), orange, 3);
         Imgproc.line(cropped, new Point(centerX - rangeX,0), new Point(centerX - rangeX, height), orange, 3);
 
-//        Mat contourSrc = new Mat();
 
         // Finding all red pixels in the source image
-//        Mat bw1 = new Mat();
-//        Mat bw2 = new Mat();
-        Core.inRange(hls, new Scalar(0, 255 * 0.3, 255 * 0.1), new Scalar(12, 204, 255), bw1);
-        Core.inRange(hls, new Scalar(170, 255 * 0.3, 255 * 0.1), new Scalar(180, 204, 255), bw2);
+        Core.inRange(hsv, new Scalar(0, 150, 0), new Scalar(12, 255, 255), bw1);
+        Core.inRange(hsv, new Scalar(170, 90, 0), new Scalar(180, 255, 255), bw2);
         Core.add(bw1, bw2, contourSrc);
 
-//        Mat hierarchy = new Mat();
         contours = new ArrayList<>();
         Imgproc.findContours(contourSrc, contours, hierarchy, Imgproc.RETR_TREE, Imgproc.CHAIN_APPROX_SIMPLE);
 
-        if(!contours.isEmpty()) contours.removeIf(a -> contourArea(a) < 30);
+        if(!contours.isEmpty()) contours.removeIf(a -> contourArea(a) < 20);
 
 
         if (!contours.isEmpty()) {
@@ -125,14 +122,15 @@ public class CVShooting extends OpenCvPipeline {
             Rect largestBoundingRect = boundingRect(new MatOfPoint2f(contours.get(largestContourIndex).toArray()));
 
 
-            /*contours.removeIf(a -> {
+
+            contours.removeIf(a -> {
                 double centerLargest = centerRect(largestBoundingRect);
                 double centerContour = centerRect(boundingRect(a));
-                double halfWidth = largestBoundingRect.width / 2.0;
+                double halfWidth = largestBoundingRect.width * 0.8;
                 return (centerLargest + halfWidth) > centerContour && (centerLargest - halfWidth) < centerLargest;
             });
 
-            if(contours.isEmpty()) return input;*/
+            if(contours.isEmpty()) return input;
 
             /*int finalLargestContourIndex = largestContourIndex;
             contours.removeIf(a -> {

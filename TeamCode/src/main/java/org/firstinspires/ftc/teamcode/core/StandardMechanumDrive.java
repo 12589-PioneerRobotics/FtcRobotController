@@ -105,7 +105,7 @@ public class StandardMechanumDrive extends MecanumDrive {
 
     private Pose2d lastPoseOnTurn;
 
-    private ExecutorService threadpool;
+    public ExecutorService threadpool;
 
     public StandardMechanumDrive(final HardwareMap hardwareMap) {
         super(kV, kA, kStatic, TRACK_WIDTH, TRACK_WIDTH, LATERAL_MULTIPLIER);
@@ -167,7 +167,7 @@ public class StandardMechanumDrive extends MecanumDrive {
         }
 
         setLocalizer(new StandardTrackingWheelLocalizer(hardwareMap)); // Comment out if using all 4 motors for navigation
-        threadpool = Executors.newCachedThreadPool();
+        threadpool = Executors.newFixedThreadPool(10);
     }
 
     public TrajectoryBuilder trajectoryBuilder(Pose2d startPose) {

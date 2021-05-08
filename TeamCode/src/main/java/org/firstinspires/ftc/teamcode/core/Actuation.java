@@ -183,7 +183,7 @@ public class Actuation {
      *
      */
     public void shoot(Target target) {
-        shoot(target, 0.18);
+        shoot(target, 0.10);
     }
 
     public void shoot(Target target, double offset) {
@@ -253,7 +253,7 @@ public class Actuation {
     }
 
     public void powerShots() {
-        powerShots(0.12,0.06,0.02);
+        powerShots(0,0.05,0.05);
     }
 
     public void preheatShooter(double velocity) {

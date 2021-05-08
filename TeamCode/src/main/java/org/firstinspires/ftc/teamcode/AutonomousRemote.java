@@ -19,6 +19,7 @@ import org.firstinspires.ftc.teamcode.core.TensorFlowRingDetection;
 import java.util.Arrays;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
+import java.util.concurrent.FutureTask;
 
 import static java.lang.Math.toRadians;
 import static org.firstinspires.ftc.teamcode.core.ActuationConstants.Target.POWER_SHOT_RIGHT;
@@ -54,7 +55,6 @@ public class AutonomousRemote extends LinearOpMode {
      */
 
     TensorFlowRingDetection ringDetection;
-    String ringCase = "";
     StandardMechanumDrive drive;
     Actuation actuation;
 
@@ -64,17 +64,16 @@ public class AutonomousRemote extends LinearOpMode {
         drive = new StandardMechanumDrive(hardwareMap);
         drive.setPoseEstimate(autonStartPose);
         actuation = new Actuation(this, drive);
-        ringDetection = new TensorFlowRingDetection(this);
+        ringDetection = new TensorFlowRingDetection(this, drive);
 
         new Thread(ringDetection).start();
         waitForStart();
-        ringCase = ringDetection.ringCase;
         ringDetection.stopFlag = true;
 
         if (isStopRequested()) return;
 
         try {
-            performCase(ringCase);
+            performCase(ringDetection);
         } catch (ExecutionException e) {
             e.printStackTrace();
         }
@@ -91,7 +90,8 @@ public class AutonomousRemote extends LinearOpMode {
     void park() {
         Pose2d pose = drive.getPoseEstimate();
         drive.followTrajectory(drive.trajectoryBuilder(pose).lineToConstantHeading(new Vector2d(SHOOT_LINE, pose.getY())).build());
-    }
+    }    Future<Trajectory> startToRingsTask;
+
 
     /**
      * 1. Go to center square of desired square 2. Release 1st wobble (already preloaded) 3. Go to
@@ -185,14 +185,16 @@ public class AutonomousRemote extends LinearOpMode {
         actuation.placeWobble();
     }
 
-    private void performCase(String ringCase) throws ExecutionException, InterruptedException {
-        Trajectory startToRings;
-        switch (ringCase) {
+    private void performCase(TensorFlowRingDetection thread) throws ExecutionException, InterruptedException {
+        Future<Trajectory> startToRings = thread.getInitialPath();
+        switch (thread.ringCase) {
             case "None": // Zero rings, case "A"
                 actuation.preheatShooter(-3.9);
 
-                startToRings = drive.trajectoryBuilder(drive.getPoseEstimate()).splineToLinearHeading(new Pose2d(0, -30), 0).build();
-                drive.followTrajectory(startToRings);
+                drive.followTrajectory(drive.trajectoryBuilder(
+                        drive.getPoseEstimate())
+                        .splineToLinearHeading(new Pose2d(0, -30), 0)
+                        .build());
 
                 actuation.shoot(TOWER_GOAL, 0.1);
                 sleep(300);
@@ -209,17 +211,12 @@ public class AutonomousRemote extends LinearOpMode {
 
                 actuation.shoot(TOWER_GOAL, 0.17);
 
-                Future<Trajectory> startToRingsTask = drive.trajectory(
-                        () -> drive.trajectoryBuilder(
-                                drive.getPoseEstimate())
-                                .splineToLinearHeading(new Pose2d(0, -30), 0)
-                                .build());
-
-
 //                actuation.preheatShooter(TOWER_GOAL);
                 actuation.suck();
-                startToRings = startToRingsTask.get();
-                drive.followTrajectory(startToRings);
+                drive.followTrajectory(drive.trajectoryBuilder(
+                        drive.getPoseEstimate())
+                        .splineToLinearHeading(new Pose2d(0, -30), 0)
+                        .build());
 
                 telemetry.addData("current pose", drive.getPoseEstimate().toString());
 
@@ -238,7 +235,7 @@ public class AutonomousRemote extends LinearOpMode {
 
             case LABEL_FIRST_ELEMENT: // 4 rings, case "C", "Quad"
 
-                actuation.preheatShooter(-3.91);
+                actuation.preheatShooter(-3.5);
                 /*drive.followTrajectory(drive.trajectoryBuilder(drive.getPoseEstimate()).forward(12).build());
                 sleep(400);
                 actuation.shoot(TOWER_GOAL, 0.17);
@@ -246,22 +243,24 @@ public class AutonomousRemote extends LinearOpMode {
 
 //                startToRings = drive.trajectoryBuilder(drive.getPoseEstimate()).splineToConstantHeading(ringPos, 0).build();
 
-                startToRings = drive.trajectoryBuilder(drive.getPoseEstimate(), toRadians(45))
-                        .splineToConstantHeading(leftOfRingPos, toRadians(135))
-                        .splineToConstantHeading(new Vector2d(-2,-30), toRadians(135))
-                        .build();
+                drive.followTrajectory(drive.trajectoryBuilder(drive.getPoseEstimate(), toRadians(45))
+                        .splineToConstantHeading(leftOfRingPos, toRadians(225))
+                        .splineToConstantHeading(new Vector2d(-2, -30), toRadians(135))
+                        .build());
 
-                drive.followTrajectory(startToRings);
+                telemetry.addLine("Done");
 
-                /*actuation.suck();
+                actuation.suck();
                 actuation.powerShots();
 
 
-                drive.followTrajectory(drive.trajectoryBuilder(drive.getPoseEstimate()).back(14).build());
+                drive.followTrajectory(drive.trajectoryBuilder(drive.getPoseEstimate()).splineToSplineHeading(new Pose2d(-16, -30, 0), toRadians(0)).build());
                 actuation.shoot();
                 actuation.shoot();
 
-                drive.followTrajectory(drive.trajectoryBuilder(drive.getPoseEstimate()).back(8).build());
+                telemetry.addLine("First Round finished");
+                drive.followTrajectory(drive.trajectoryBuilder(drive.getPoseEstimate()).splineToSplineHeading(new Pose2d(-22, -30, 0), toRadians(0)).build());
+                telemetry.addLine("Trajectory finished");
                 actuation.shoot();
                 actuation.shoot();
                 actuation.stopIntake();
@@ -269,7 +268,7 @@ public class AutonomousRemote extends LinearOpMode {
 
                 actuation.killFlywheel();
 
-                wobbleRoutine(centerC, backPoseC);*/
+                wobbleRoutine(centerC, backPoseC);
 //                experimentalWobbleGoalRoutine(centerC, backPoseC);
                 break;
         }

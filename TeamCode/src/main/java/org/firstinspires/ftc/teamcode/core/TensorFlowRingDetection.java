@@ -31,6 +31,9 @@ package org.firstinspires.ftc.teamcode.core;
 
 import android.util.Log;
 
+import com.acmerobotics.roadrunner.geometry.Pose2d;
+import com.acmerobotics.roadrunner.geometry.Vector2d;
+import com.acmerobotics.roadrunner.trajectory.Trajectory;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 
@@ -41,6 +44,11 @@ import org.firstinspires.ftc.robotcore.external.tfod.Recognition;
 import org.firstinspires.ftc.robotcore.external.tfod.TFObjectDetector;
 
 import java.util.List;
+import java.util.concurrent.Future;
+import java.util.concurrent.FutureTask;
+
+import static java.lang.Math.toRadians;
+import static org.firstinspires.ftc.teamcode.core.FieldConstants.leftOfRingPos;
 
 public class TensorFlowRingDetection implements Runnable {
     private static final String TFOD_MODEL_ASSET = "UltimateGoal.tflite";
@@ -57,6 +65,22 @@ public class TensorFlowRingDetection implements Runnable {
     LinearOpMode linearOpMode;
     public String ringCase = "";
     public boolean stopFlag = false;
+
+    public Future<Trajectory> getInitialPath() {
+        switch (ringCase) {
+            case "None":
+                return pathA;
+            case LABEL_SECOND_ELEMENT:
+                return pathB;
+            case LABEL_FIRST_ELEMENT:
+                return pathC;
+        }
+        return null;
+    }
+
+    Future<Trajectory> initialPath, pathA, pathB, pathC;
+
+    StandardMechanumDrive drive;
 
 
     private void initVuforia() {
@@ -86,13 +110,24 @@ public class TensorFlowRingDetection implements Runnable {
         tfod.loadModelFromAsset(TFOD_MODEL_ASSET, LABEL_FIRST_ELEMENT, LABEL_SECOND_ELEMENT);
     }
 
-    public TensorFlowRingDetection(LinearOpMode linearOpMode) {
+    public TensorFlowRingDetection(LinearOpMode linearOpMode, StandardMechanumDrive drive) {
+        this.drive = drive;
         this.linearOpMode = linearOpMode;
         initVuforia();
         initTfod(linearOpMode.hardwareMap);
         if (tfod != null) {
             tfod.activate();
         }
+
+        /*pathA = pathB = drive.trajectory(
+                () -> drive.trajectoryBuilder(
+                        drive.getPoseEstimate())
+                        .splineToLinearHeading(new Pose2d(0, -30), 0)
+                        .build());
+        pathC = drive.trajectory(() -> drive.trajectoryBuilder(drive.getPoseEstimate(), toRadians(45))
+                .splineToConstantHeading(leftOfRingPos, toRadians(225))
+                .splineToConstantHeading(new Vector2d(-2, -30), toRadians(135))
+                .build());*/
     }
 
     @Override
@@ -108,6 +143,7 @@ public class TensorFlowRingDetection implements Runnable {
                     if (!updatedRecognitions.isEmpty())
                         ringCase = updatedRecognitions.get(0).getLabel();
                     else ringCase = "None";
+
                     linearOpMode.telemetry.addData("Ring case", ringCase);
                     linearOpMode.telemetry.update();
                 }
@@ -123,4 +159,5 @@ public class TensorFlowRingDetection implements Runnable {
             tfod.shutdown();
         }
     }
+
 }

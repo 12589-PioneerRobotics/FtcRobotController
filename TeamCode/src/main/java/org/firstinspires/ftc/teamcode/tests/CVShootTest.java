@@ -18,6 +18,7 @@ import org.openftc.easyopencv.OpenCvWebcam;
 
 import static org.firstinspires.ftc.teamcode.core.ActuationConstants.FEEDER_REST;
 import static org.firstinspires.ftc.teamcode.core.ActuationConstants.FEEDER_YEET;
+import static org.firstinspires.ftc.teamcode.tests.KobeTest2.shootDelayMillis;
 
 @TeleOp
 public class CVShootTest extends OpMode {
@@ -37,8 +38,8 @@ public class CVShootTest extends OpMode {
         update = new GamepadEventPS(gamepad1);
         drive = new StandardMechanumDrive(hardwareMap);
         cameraServo = hardwareMap.servo.get("cameraServo");
-        cameraServo.setPosition(0.775);
         actuation = new Actuation(hardwareMap, drive, null, this);
+        cameraServo.setPosition(0.80);
 
         int cameraMonitorViewId = hardwareMap.appContext.getResources().getIdentifier("cameraMonitorViewId", "id", hardwareMap.appContext.getPackageName());
         webcam = OpenCvCameraFactory.getInstance().createWebcam(hardwareMap.get(WebcamName.class,"Webcam 1"), cameraMonitorViewId);
@@ -54,7 +55,7 @@ public class CVShootTest extends OpMode {
                 currentTargetIndex -= 1;
         }
         if (update.dPadRight()) {
-            if (currentTargetIndex != ActuationConstants.Target.values().length - 1)//
+            if (currentTargetIndex != ActuationConstants.Target.values().length - 1)
                 currentTargetIndex += 1;
         }
 
@@ -66,32 +67,50 @@ public class CVShootTest extends OpMode {
                 turning = true;
             else {
                 actuation.preheatShooter(-4.0);
-                try {
-                    Thread.sleep(500);
-                    actuation.feeder.setPosition(FEEDER_REST);
-                    Thread.sleep(500);
-                    actuation.feeder.setPosition(FEEDER_YEET);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
+                for (int i = 0; i < 3; i++) {
+                    try {
+                        actuation.feeder.setPosition(FEEDER_REST);
+                        Thread.sleep((long) Math.max(shootDelayMillis, 0));
+                        actuation.feeder.setPosition(FEEDER_YEET);
+                        Thread.sleep((long) Math.max(shootDelayMillis, 0));
+                        actuation.feeder.setPosition(FEEDER_REST);
+
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
                 }
             }
         }
+
+        drive.setWeightedDrivePower(
+                new Pose2d(
+                        gamepad1.left_stick_y,
+                        gamepad1.left_stick_x,
+                        -gamepad1.right_stick_x
+                )
+        );
+
+        if (gamepad1.right_trigger > .5) actuation.suck();
+        else if (gamepad1.left_trigger > .5) actuation.spitOut();
+        else if (gamepad1.right_trigger < .5 && gamepad2.left_trigger < .5) actuation.stopIntake();
 
         if(turning) {
             drive.setWeightedDrivePower(new Pose2d(0, 0, frame.targetDist() > 0 ? -0.3 : 0.3));
             if(frame.isAligned()) {
                 turning = false;
                 drive.setWeightedDrivePower(new Pose2d(0,0,0));
-                actuation.preheatShooter(-4.0);
-                try {
-                    Thread.sleep(100);
-                    actuation.feeder.setPosition(FEEDER_REST);
-                    Thread.sleep(500);
-                    actuation.feeder.setPosition(FEEDER_YEET);
-                    Thread.sleep(500);
-                    actuation.feeder.setPosition(FEEDER_REST);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
+                actuation.preheatShooter(-3.7);
+                for (int i = 0; i < 3; i++) {
+                    try {
+                        actuation.feeder.setPosition(FEEDER_REST);
+                        Thread.sleep((long) Math.max(shootDelayMillis, 0));
+                        actuation.feeder.setPosition(FEEDER_YEET);
+                        Thread.sleep((long) Math.max(shootDelayMillis, 0));
+                        actuation.feeder.setPosition(FEEDER_REST);
+
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
                 }
             }
         }

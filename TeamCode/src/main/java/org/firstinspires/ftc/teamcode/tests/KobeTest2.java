@@ -44,7 +44,7 @@ public class KobeTest2 extends OpMode {
     Servo feeder;
     final double wheelRadius = 0.0508; // in meters
     public static double angularVelocity = 0; // rad/s
-    public static double shootDelayMillis = 500;
+    public static double shootDelayMillis = 250;
     double[] turnOffsets = {0,0,0};
     public static double turnOffsetLeft = 0.18;
     public static double turnOffsetMiddle = .18;

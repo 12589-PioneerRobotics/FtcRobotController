@@ -27,7 +27,7 @@ import static org.opencv.imgproc.Imgproc.drawMarker;
 
 public class CVShooting extends OpenCvPipeline {
 
-    private final double centerX = 180;
+    private double centerX = 200;
     private final double rangeX = 15;
     private final Scalar red = new Scalar(255, 0, 0);
     private final Scalar green = new Scalar(0, 255, 0);
@@ -123,12 +123,14 @@ public class CVShooting extends OpenCvPipeline {
 
 
 
+/*
             contours.removeIf(a -> {
                 double centerLargest = centerRect(largestBoundingRect);
                 double centerContour = centerRect(boundingRect(a));
-                double halfWidth = largestBoundingRect.width * 0.8;
+                double halfWidth = largestBoundingRect.width / 2.0;
                 return (centerLargest + halfWidth) > centerContour && (centerLargest - halfWidth) < centerLargest;
             });
+*/
 
             if(contours.isEmpty()) return input;
 
@@ -151,32 +153,35 @@ public class CVShooting extends OpenCvPipeline {
             }*/
 
             Imgproc.rectangle(cropped, largestBoundingRect.br(), largestBoundingRect.tl(), blue, 2);
-            Imgproc.drawContours(cropped, contours, -1, green);
-            Log.v("largest coontour index", String.valueOf(largestContourIndex));
-            Imgproc.drawContours(cropped, contours, largestContourIndex, blue);
+            if(!contours.isEmpty()) {
+                Imgproc.drawContours(cropped, contours, -1, green);
+                Log.v("largest contour index", String.valueOf(largestContourIndex));
+                Imgproc.drawContours(cropped, contours, largestContourIndex, blue);
 
-            // Big assumption here: In order for power shots to be effective, all of them need to be in view of the camera.
-            switch (target) {
-                // With the above assumption made, the left power shot should always be with the lowest center x value
-                case POWER_SHOT_LEFT:
-                    targetCenter = Collections.min(centers);
-                    break;
 
-                case POWER_SHOT_MIDDLE:
-                    centers.sort(Double::compareTo);
-                    if(contours.size() == 3 || contours.size() == 4)
-                        targetCenter = centers.get(1);
-                    break;
+                // Big assumption here: In order for power shots to be effective, all of them need to be in view of the camera.
+                switch (target) {
+                    // With the above assumption made, the left power shot should always be with the lowest center x value
+                    case POWER_SHOT_LEFT:
+                        targetCenter = Collections.min(centers);
+                        break;
 
-                case POWER_SHOT_RIGHT:
-                    centers.sort(Double::compareTo);
-                    if(contours.size() == 3 || contours.size() == 4)
-                        targetCenter = centers.get(2);
-                    break;
+                    case POWER_SHOT_MIDDLE:
+                        centers.sort(Double::compareTo);
+                        if (contours.size() == 3 || contours.size() == 4)
+                            targetCenter = centers.get(1);
+                        break;
 
-                case TOWER_GOAL:
-                    targetCenter = centerRect(largestBoundingRect);
-                    break;
+                    case POWER_SHOT_RIGHT:
+                        centers.sort(Double::compareTo);
+                        if (contours.size() == 3 || contours.size() == 4)
+                            targetCenter = centers.get(2);
+                        break;
+
+                    case TOWER_GOAL:
+                        targetCenter = centerRect(largestBoundingRect);
+                        break;
+                }
             }
         }
         else {

@@ -28,7 +28,7 @@ public class ActuationConstants {
     public static PIDFCoefficients shooterPIDF = new PIDFCoefficients(30,25,0,0);
 
     static final double CAMERA_POS_RINGS = 0.65;
-    static final double CAMERA_POS_AIM = 0.775;
+    static final double CAMERA_POS_AIM = 0.8;
 
     public static double FEEDER_REST = 0.375;
     public static double FEEDER_YEET = 0.61;

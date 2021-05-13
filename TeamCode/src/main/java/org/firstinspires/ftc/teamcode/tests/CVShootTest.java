@@ -59,6 +59,16 @@ public class CVShootTest extends OpMode {
                 currentTargetIndex += 1;
         }
 
+        if(ActuationConstants.Target.values()[currentTargetIndex] == ActuationConstants.Target.TOWER_GOAL) {
+            actuation.preheatShooter(ActuationConstants.Target.TOWER_GOAL);
+        }
+        else {
+            actuation.preheatShooter(ActuationConstants.Target.POWER_SHOT_LEFT);
+        }
+
+        if(update.share())
+            actuation.killFlywheel();
+
         if(update.square())
             actuation.shootInPlace(1);
 
@@ -68,16 +78,7 @@ public class CVShootTest extends OpMode {
             else {
                 actuation.preheatShooter(-4.0);
                 for (int i = 0; i < 3; i++) {
-                    try {
-                        actuation.feeder.setPosition(FEEDER_REST);
-                        Thread.sleep((long) Math.max(shootDelayMillis, 0));
-                        actuation.feeder.setPosition(FEEDER_YEET);
-                        Thread.sleep((long) Math.max(shootDelayMillis, 0));
-                        actuation.feeder.setPosition(FEEDER_REST);
-
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
+                    actuation.feedRing();
                 }
             }
         }
@@ -101,16 +102,7 @@ public class CVShootTest extends OpMode {
                 drive.setWeightedDrivePower(new Pose2d(0,0,0));
                 actuation.preheatShooter(-3.7);
                 for (int i = 0; i < 3; i++) {
-                    try {
-                        actuation.feeder.setPosition(FEEDER_REST);
-                        Thread.sleep((long) Math.max(shootDelayMillis, 0));
-                        actuation.feeder.setPosition(FEEDER_YEET);
-                        Thread.sleep((long) Math.max(shootDelayMillis, 0));
-                        actuation.feeder.setPosition(FEEDER_REST);
-
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
+                    actuation.feedRing();
                 }
             }
         }

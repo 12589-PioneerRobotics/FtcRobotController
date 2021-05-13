@@ -15,11 +15,9 @@ import org.opencv.core.Size;
 import org.opencv.imgproc.Imgproc;
 import org.openftc.easyopencv.OpenCvPipeline;
 
-import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Collections;
 
-import static org.opencv.imgproc.Imgproc.COLOR_RGB2HLS;
 import static org.opencv.imgproc.Imgproc.COLOR_RGB2HSV;
 import static org.opencv.imgproc.Imgproc.boundingRect;
 import static org.opencv.imgproc.Imgproc.contourArea;
@@ -63,20 +61,29 @@ public class CVShooting extends OpenCvPipeline {
         bw2 = new Mat();
         contourSrc = new Mat();
         hierarchy = new Mat();
+        kernelSize = new Size(3,3);
+        redLb1 = new Scalar(0, 150, 0);
+        redUb1 = new Scalar(12, 255, 255);
+        redLb2 = new Scalar(170, 90, 0);
+        redUb2 = new Scalar(180, 255, 255);
     }
     Mat hsv, bw1, bw2, contourSrc, hierarchy, cropped;
     Rect cropBox;
+    ArrayList<Rect> boundingRects;
+    ArrayList<Double> centers;
+    Rect largestBoundingRect;
+    Size kernelSize;
+    int width, height;
+    Scalar redLb1, redUb1, redLb2, redUb2;
 
 
     @Override
     public Mat processFrame(Mat input) {
 
-        int height = input.height();
-        int width = input.width();
+        height = input.height();
+        width = input.width();
 
         cropBox = new Rect(new Point(0,60), new Point(width,height));
-
-
 
         Imgproc.drawMarker(input, new Point(0,100), orange ,0);
         drawMarker(input, new Point(width,height), orange, 0);
@@ -85,8 +92,7 @@ public class CVShooting extends OpenCvPipeline {
         cropped = new Mat(input, cropBox);
 
         Imgproc.cvtColor(cropped, hsv, COLOR_RGB2HSV);
-        int[] kSize = {3,3};
-        Imgproc.GaussianBlur(hsv,hsv, new Size(3,3), 0);
+        Imgproc.GaussianBlur(hsv, hsv, kernelSize, 0);
 
         // Shooting bounds
         Imgproc.line(cropped, new Point(centerX + rangeX,0), new Point(centerX + rangeX, height), orange, 3);
@@ -94,8 +100,8 @@ public class CVShooting extends OpenCvPipeline {
 
 
         // Finding all red pixels in the source image
-        Core.inRange(hsv, new Scalar(0, 150, 0), new Scalar(12, 255, 255), bw1);
-        Core.inRange(hsv, new Scalar(170, 90, 0), new Scalar(180, 255, 255), bw2);
+        Core.inRange(hsv, redLb1, redUb1, bw1);
+        Core.inRange(hsv, redLb2, redUb2, bw2);
         Core.add(bw1, bw2, contourSrc);
 
         contours = new ArrayList<>();
@@ -106,33 +112,30 @@ public class CVShooting extends OpenCvPipeline {
 
         if (!contours.isEmpty()) {
             int largestContourIndex = 0;
-            ArrayList<Rect> boundingRects = new ArrayList<>();
-            ArrayList<Double> centers = new ArrayList<>();
+            boundingRects = new ArrayList<>();
+            centers = new ArrayList<>();
 
+
+            largestContourIndex = getLargestContourIndex(contours);
             for (int i = 0; i < contours.size(); i++) {
-                // This will prob work to get the tower goal
-                if(i > 0) {
-                    if (Imgproc.contourArea(contours.get(i)) > Imgproc.contourArea(contours.get(largestContourIndex))) {
-                        largestContourIndex = i;
-                    }
-                }
                 boundingRects.add(boundingRect(new MatOfPoint2f(contours.get(i).toArray())));
-                centers.add(centerRect(boundingRects.get(i)));
+                centers.add(centerRectX(boundingRects.get(i)));
             }
-            Rect largestBoundingRect = boundingRect(new MatOfPoint2f(contours.get(largestContourIndex).toArray()));
+            largestBoundingRect = boundingRect(new MatOfPoint2f(contours.get(largestContourIndex).toArray()));
 
 
 
-/*
             contours.removeIf(a -> {
-                double centerLargest = centerRect(largestBoundingRect);
-                double centerContour = centerRect(boundingRect(a));
+                double centerLargestX = centerRectX(largestBoundingRect);
+                double centerContourX = centerRectX(boundingRect(a));
+                double centerLargestY = centerRectY(largestBoundingRect);
+                double centerContourY = centerRectY(boundingRect(a));
                 double halfWidth = largestBoundingRect.width / 2.0;
-                return (centerLargest + halfWidth) > centerContour && (centerLargest - halfWidth) < centerLargest;
+                double halfHeight = largestBoundingRect.height / 2.0;
+                return ((centerLargestX + halfWidth) > centerContourX && (centerLargestX - halfWidth) < centerContourX) || (centerLargestY > centerContourY);
             });
-*/
 
-            if(contours.isEmpty()) return input;
+            largestContourIndex = getLargestContourIndex(contours);
 
             /*int finalLargestContourIndex = largestContourIndex;
             contours.removeIf(a -> {
@@ -154,6 +157,7 @@ public class CVShooting extends OpenCvPipeline {
 
             Imgproc.rectangle(cropped, largestBoundingRect.br(), largestBoundingRect.tl(), blue, 2);
             if(!contours.isEmpty()) {
+                largestContourIndex = getLargestContourIndex(contours);
                 Imgproc.drawContours(cropped, contours, -1, green);
                 Log.v("largest contour index", String.valueOf(largestContourIndex));
                 Imgproc.drawContours(cropped, contours, largestContourIndex, blue);
@@ -179,7 +183,7 @@ public class CVShooting extends OpenCvPipeline {
                         break;
 
                     case TOWER_GOAL:
-                        targetCenter = centerRect(largestBoundingRect);
+                        targetCenter = centerRectX(largestBoundingRect);
                         break;
                 }
             }
@@ -191,6 +195,19 @@ public class CVShooting extends OpenCvPipeline {
         }
 
         return cropped;
+    }
+
+    int getLargestContourIndex(ArrayList<MatOfPoint> contourList) {
+        int largest = 0;
+        for (int i = 0; i < contourList.size(); i++) {
+            // This will prob work to get the tower goal
+            if (i > 0) {
+                if (Imgproc.contourArea(contourList.get(i)) > Imgproc.contourArea(contourList.get(largest))) {
+                    largest = i;
+                }
+            }
+        }
+        return largest;
     }
 
     public int getContourCount() {
@@ -205,7 +222,12 @@ public class CVShooting extends OpenCvPipeline {
         return targetCenter - centerX;
     }
 
-    private double centerRect(Rect rect) {
+    private double centerRectX(Rect rect) {
         return (rect.br().x + rect.tl().x) / 2.0;
     }
+
+    private double centerRectY(Rect rect) {
+        return (rect.br().y + rect.tl().y) / 2.0;
+    }
+
 }

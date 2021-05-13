@@ -22,6 +22,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.FutureTask;
 
 import static java.lang.Math.toRadians;
+import static org.firstinspires.ftc.teamcode.core.ActuationConstants.Target.POWER_SHOT_LEFT;
 import static org.firstinspires.ftc.teamcode.core.ActuationConstants.Target.POWER_SHOT_RIGHT;
 import static org.firstinspires.ftc.teamcode.core.ActuationConstants.Target.TOWER_GOAL;
 import static org.firstinspires.ftc.teamcode.core.DriveConstants.MAX_ACCEL;
@@ -64,6 +65,8 @@ public class AutonomousRemote extends LinearOpMode {
         drive = new StandardMechanumDrive(hardwareMap);
         drive.setPoseEstimate(autonStartPose);
         actuation = new Actuation(this, drive);
+
+        actuation.cameraServoToRings();
         ringDetection = new TensorFlowRingDetection(this, drive);
 
         new Thread(ringDetection).start();
@@ -206,12 +209,12 @@ public class AutonomousRemote extends LinearOpMode {
                 break;
 
             case LABEL_SECOND_ELEMENT: // One ring, case "B", "Single"
-                actuation.preheatShooter(-3.9);
+                actuation.preheatShooter(POWER_SHOT_LEFT);
                 drive.followTrajectory(drive.trajectoryBuilder(drive.getPoseEstimate()).forward(12).build());
 
-                actuation.shoot(TOWER_GOAL, 0.17);
+//                actuation.shoot(TOWER_GOAL, 0.17);
+                actuation.powerShots();
 
-//                actuation.preheatShooter(TOWER_GOAL);
                 actuation.suck();
                 drive.followTrajectory(drive.trajectoryBuilder(
                         drive.getPoseEstimate())
@@ -220,7 +223,8 @@ public class AutonomousRemote extends LinearOpMode {
 
                 telemetry.addData("current pose", drive.getPoseEstimate().toString());
 
-                actuation.shoot(TOWER_GOAL, 0.15);
+//                actuation.shoot(TOWER_GOAL, 0.15);
+                actuation.shootCV();
                 actuation.stopIntake();
                 sleep(300);
                 actuation.suck();

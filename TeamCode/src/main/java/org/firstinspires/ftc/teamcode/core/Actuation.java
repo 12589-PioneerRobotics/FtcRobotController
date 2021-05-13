@@ -4,14 +4,16 @@ import com.acmerobotics.roadrunner.geometry.Pose2d;
 import com.qualcomm.hardware.rev.RevColorSensorV3;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
-import com.qualcomm.robotcore.hardware.ColorSensor;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.Servo;
-import com.vuforia.CameraDevice;
 
+import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
+import org.openftc.easyopencv.OpenCvCameraFactory;
+import org.openftc.easyopencv.OpenCvCameraRotation;
+import org.openftc.easyopencv.OpenCvWebcam;
 
 import static com.qualcomm.robotcore.hardware.DcMotor.RunMode.RUN_USING_ENCODER;
 import static com.qualcomm.robotcore.hardware.DcMotor.RunMode.RUN_WITHOUT_ENCODER;
@@ -45,6 +47,7 @@ import static org.firstinspires.ftc.teamcode.core.FieldConstants.centerPowerShot
 import static org.firstinspires.ftc.teamcode.core.FieldConstants.leftPowerShot;
 import static org.firstinspires.ftc.teamcode.core.FieldConstants.redGoal;
 import static org.firstinspires.ftc.teamcode.core.FieldConstants.rightPowerShot;
+import static org.firstinspires.ftc.teamcode.tests.KobeTest2.shootDelayMillis;
 
 public class Actuation {
 
@@ -57,6 +60,8 @@ public class Actuation {
     OpMode opMode;
     RevColorSensorV3 colorsensor;
     boolean shot;
+    CVShooting frame;
+    OpenCvWebcam webcam;
 
     int rings = 0;
     double ringRuntime = 0;
@@ -66,6 +71,7 @@ public class Actuation {
      */
     public Actuation(LinearOpMode linearOpMode, StandardMechanumDrive drive) {
         this(linearOpMode.hardwareMap, drive, linearOpMode, null);
+        frame = new CVShooting(ActuationConstants.Target.values()[0], linearOpMode.telemetry);
         this.linearOpMode = linearOpMode;
     }
 
@@ -77,6 +83,8 @@ public class Actuation {
         this.drive = drive;
         this.linearOpMode = linearOpMode;
         this.opMode = opMode;
+
+        frame = new CVShooting(ActuationConstants.Target.values()[0], opMode.telemetry);
 
         if (hardwareMap.dcMotor.contains("intake")) {
             intake = hardwareMap.dcMotor.get("intake");
@@ -128,12 +136,20 @@ public class Actuation {
         }
     }
 
+    public void cvShootingInit() {
+        int cameraMonitorViewId = hardwareMap.appContext.getResources().getIdentifier("cameraMonitorViewId", "id", hardwareMap.appContext.getPackageName());
+        webcam = OpenCvCameraFactory.getInstance().createWebcam(hardwareMap.get(WebcamName.class,"Webcam 1"), cameraMonitorViewId);
+        webcam.setPipeline(frame);
+        webcam.openCameraDeviceAsync(() -> webcam.startStreaming(640, 480, OpenCvCameraRotation.UPRIGHT));
+        cameraServoToAim();
+    }
+
     public void cameraServoToRings() {
         if(cameraServo != null)
             cameraServo.setPosition(CAMERA_POS_RINGS);
     }
 
-    public void cameraServoToAim() {
+    void cameraServoToAim() {
         if(cameraServo != null)
             cameraServo.setPosition(CAMERA_POS_AIM);
     }
@@ -142,13 +158,15 @@ public class Actuation {
     // All Shooter Operations
 
     public void feedRing() {
-        if (shot) {
+        try {
             feeder.setPosition(FEEDER_REST);
-            shot = false;
-
-        } else {
+            Thread.sleep((long) Math.max(shootDelayMillis, 0));
             feeder.setPosition(FEEDER_YEET);
-            shot = true;
+            Thread.sleep((long) Math.max(shootDelayMillis, 0));
+            feeder.setPosition(FEEDER_REST);
+
+        } catch (InterruptedException e) {
+            e.printStackTrace();
         }
     }
 
@@ -173,6 +191,7 @@ public class Actuation {
     /**
      * Turns the shooter (or robot if necessary) to face the red goal, then fires.
      */
+    @Deprecated
     public void shoot() {
         shoot(TOWER_GOAL);
     }
@@ -182,10 +201,11 @@ public class Actuation {
      *  @param target position to fire at
      *
      */
+    @Deprecated
     public void shoot(Target target) {
         shoot(target, 0.10);
     }
-
+    @Deprecated
     public void shoot(Target target, double offset) {
         if (shoot == null || feeder == null) return;
         Pose2d pose = drive.getPoseEstimate();
@@ -201,7 +221,6 @@ public class Actuation {
                                 .lineToLinearHeading(new Pose2d(SHOOT_LINE - 9, pose.getY(), destination))
                                 .build()
                 );
-
 
                 drive.turn(destination - ((pose.getHeading() > PI) ? pose.getHeading() - (2 * PI) : pose.getHeading()) - offset);
 
@@ -231,29 +250,33 @@ public class Actuation {
         drive.update();
     }
 
-    public void shootInPlace(int times) {
-        for(int i = 0; i < times; i++) {
-            feeder.setPosition(FEEDER_YEET);
-            linearOpMode.sleep(400);
-            feeder.setPosition(FEEDER_REST);
-            linearOpMode.sleep(400);
+    public void shootCV(Target target) {
+        cameraServoToAim();
+        frame.setTarget(target);
+        if(!frame.isAligned()) {
+            if(linearOpMode != null) {
+
+            }
+        }
+        else {
+            feedRing();
         }
     }
 
-    public void powerShots(double rightOffset, double middleOffset, double leftOffset) {
+    public void shootCV() {
+        shootCV(TOWER_GOAL);
+    }
 
-        try {
-            shoot(POWER_SHOT_RIGHT, rightOffset);
-            Thread.sleep(750);
-            shoot(POWER_SHOT_MIDDLE, middleOffset);
-            Thread.sleep(750);
-            shoot(POWER_SHOT_LEFT, leftOffset);
+    public void shootInPlace(int times) {
+        for(int i = 0; i < times; i++) {
+            feedRing();
         }
-        catch (InterruptedException e) { e.printStackTrace(); }
     }
 
     public void powerShots() {
-        powerShots(0,0.05,0.05);
+        shootCV(POWER_SHOT_RIGHT);
+        shootCV(POWER_SHOT_LEFT);
+        shootCV(POWER_SHOT_MIDDLE);
     }
 
     public void preheatShooter(double velocity) {
@@ -262,7 +285,7 @@ public class Actuation {
 
     public void preheatShooter(Target target) {
         if (shoot != null)
-            shoot.setVelocity(target == TOWER_GOAL ? -4.0 : -3.4, AngleUnit.RADIANS);
+            shoot.setVelocity(target == TOWER_GOAL ? -3.7 : -3.3, AngleUnit.RADIANS);
     }
 
     public void killFlywheel() {

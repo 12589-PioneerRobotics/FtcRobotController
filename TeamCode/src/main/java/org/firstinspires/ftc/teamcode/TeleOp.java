@@ -10,6 +10,7 @@ import org.firstinspires.ftc.teamcode.core.Actuation;
 import org.firstinspires.ftc.teamcode.core.ActuationConstants;
 import org.firstinspires.ftc.teamcode.core.StandardMechanumDrive;
 import org.firstinspires.ftc.teamcode.core.gamepad.GamepadEventPS;
+import org.openftc.easyopencv.OpenCvWebcam;
 
 import static java.lang.Double.parseDouble;
 import static java.lang.Math.PI;
@@ -50,9 +51,6 @@ public class TeleOp extends OpMode {
         String serialized = hardwareMap.appContext.getSharedPreferences("Auton end pose", Context.MODE_PRIVATE)
                 .getString("serialized", "");
 
-        /*if (serialized.equals(""))
-            startPose = autonStartPose;
-        else startPose = unserialize(serialized);*/
         SharedPreferences prefs = hardwareMap.appContext.getSharedPreferences("Auton end pose", Context.MODE_PRIVATE);
         startPose = new Pose2d(prefs.getLong("x", 12), prefs.getLong("y", 0), prefs.getLong("heading", (long)toRadians(-90)));
         drive.setPoseEstimate(startPose);
@@ -60,6 +58,8 @@ public class TeleOp extends OpMode {
         update1 = new GamepadEventPS(gamepad1);
 //        update2 = new GamepadEventPS(gamepad2);
 //        actuation.preheatShooter(TOWER_GOAL);
+        actuation.cvShootingInit();
+
     }
 
     @Override
@@ -142,64 +142,22 @@ public class TeleOp extends OpMode {
         if(update1.square()) {
             targettingTowerGoal = !targettingTowerGoal;
             if(targettingTowerGoal)
-                actuation.preheatShooter(-4.0);
-            else actuation.preheatShooter(-3.55);
+                actuation.preheatShooter(TOWER_GOAL);
+            else actuation.preheatShooter(POWER_SHOT_LEFT);
         }
 
         if(update1.cross())
             actuation.feedRing();
 
-
         if(update1.circle()) {
-            for (int i = 0; i < 3; i++) {
-                try {
-                    actuation.feeder.setPosition(FEEDER_REST);
-                    Thread.sleep((long) Math.max(shootDelayMillis, 0));
-                    actuation.feeder.setPosition(FEEDER_YEET);
-                    Thread.sleep((long) Math.max(shootDelayMillis, 0));
-                    actuation.feeder.setPosition(FEEDER_REST);
-
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
+            if(targettingTowerGoal) {
+                for (int i = 0; i < 3; i++) {
+                    actuation.feedRing();
                 }
             }
-        }
-
-        if(update1.triangle()) {
-            /*ActuationConstants.Target[] targets = {POWER_SHOT_RIGHT, POWER_SHOT_MIDDLE, POWER_SHOT_LEFT};
-            for (int i = 0; i < 3; i++) {
-                Pose2d pose = drive.getPoseEstimate();
-
-                double destination = targets[i].pos().minus(pose.vec()).angle();
-                destination = destination > PI ? destination - 2 * PI : destination;
-
-                drive.turn(destination - ((pose.getHeading() > PI) ? pose.getHeading() - (2 * PI) : pose.getHeading()) - 0.18);
-                actuation.feeder.setPosition(FEEDER_YEET);
-                try {
-                    Thread.sleep(500);
-                    actuation.feeder.setPosition(FEEDER_REST);
-                    Thread.sleep(500);
-                    actuation.feeder.setPosition(FEEDER_YEET);
-
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-            }*/
-
-            /*for(int i = 0; i < 2; i++) {
-                try {
-                    Thread.sleep(500);
-                    actuation.feeder.setPosition(FEEDER_REST);
-                    Thread.sleep(500);
-                    actuation.feeder.setPosition(FEEDER_YEET);
-
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-                drive.followTrajectoryAsync(drive.trajectoryBuilder(drive.getPoseEstimate()).strafeLeft(3).build());
-            }*/
-
-//            actuation.powerShots();
+            else {
+                actuation.powerShots();
+            }
         }
 
         if(update1.share())

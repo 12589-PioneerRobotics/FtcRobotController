@@ -7,33 +7,35 @@ import com.acmerobotics.roadrunner.geometry.Pose2d;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 
 import org.firstinspires.ftc.teamcode.core.Actuation;
-import org.firstinspires.ftc.teamcode.core.ActuationConstants;
+import org.firstinspires.ftc.teamcode.core.CVShooting;
 import org.firstinspires.ftc.teamcode.core.StandardMechanumDrive;
 import org.firstinspires.ftc.teamcode.core.gamepad.GamepadEventPS;
-import org.openftc.easyopencv.OpenCvWebcam;
 
-import static java.lang.Double.parseDouble;
-import static java.lang.Math.PI;
 import static java.lang.Math.toRadians;
-import static org.firstinspires.ftc.teamcode.core.ActuationConstants.FEEDER_REST;
-import static org.firstinspires.ftc.teamcode.core.ActuationConstants.FEEDER_YEET;
 import static org.firstinspires.ftc.teamcode.core.ActuationConstants.Target.POWER_SHOT_LEFT;
-import static org.firstinspires.ftc.teamcode.core.ActuationConstants.Target.POWER_SHOT_MIDDLE;
-import static org.firstinspires.ftc.teamcode.core.ActuationConstants.Target.POWER_SHOT_RIGHT;
 import static org.firstinspires.ftc.teamcode.core.ActuationConstants.Target.TOWER_GOAL;
-import static org.firstinspires.ftc.teamcode.core.FieldConstants.autonStartPose;
-import static org.firstinspires.ftc.teamcode.tests.KobeTest2.shootDelayMillis;
 
-/*
-    Controls:
-    Gamepad1:
-    -Movement
-    -Shooting
-
-    Gamepad2:
-    - intake (Right Trigger)
-    - Wobble grab / place (Triangle)
-
+/**
+ * Controls:
+ * (Only one gamepad)
+ *
+ * Triangle: Move sticks up down
+ *
+ * Right Trigger: Intake In
+ * Left Trigger: Intake Out
+ *
+ * Left Joystick: Translational movement
+ * Left Joystick Click: Toggle slow mode
+ * D-Pad Up: Reverse slow mode
+ * Right Joystick: Rotational movement
+ *
+ * Square: Change target (Powershots or Tower goal)
+ * Circle: Automated shooting (All 3 powershots or 3 shots into tower goal)
+ * Cross: Manual single shot
+ * Share: Kill flywheel
+ *
+ * Left Bumper: Wobble claw open/close
+ * Right Bumper: Wobble arm up/down
  */
 @com.qualcomm.robotcore.eventloop.opmode.TeleOp
 public class TeleOp extends OpMode {
@@ -43,6 +45,7 @@ public class TeleOp extends OpMode {
     boolean normalslowMode = false;
     boolean reverseSlowMode = false;
     boolean targettingTowerGoal = false; // Shooter is either set to target tower goal or powershot
+    boolean sticksUp = false;
 
     @Override
     public void init() {
@@ -56,7 +59,6 @@ public class TeleOp extends OpMode {
         drive.setPoseEstimate(startPose);
         actuation = new Actuation(hardwareMap, drive, null, this);
         update1 = new GamepadEventPS(gamepad1);
-//        update2 = new GamepadEventPS(gamepad2);
 //        actuation.preheatShooter(TOWER_GOAL);
         actuation.cvShootingInit();
 
@@ -98,8 +100,10 @@ public class TeleOp extends OpMode {
 
         // Wobble grabber/arm functionality (left/right bumpers)
         if(update1.rightBumper()) {
-            if(actuation.isWobbleArmUp())
+            if(actuation.isWobbleArmUp()) {
                 actuation.wobbleArmDown();
+//                actuation.wobbleClawClose();
+            }
             else actuation.wobbleArmUp();
         }
 
@@ -118,7 +122,6 @@ public class TeleOp extends OpMode {
         if(gamepad1.dpad_up) {
             reverseSlowMode = true;
             drive.setWeightedDrivePower(new Pose2d(-0.35, 0, 0));
-
         }
 
         if(reverseSlowMode) {
@@ -150,21 +153,34 @@ public class TeleOp extends OpMode {
             actuation.feedRing();
 
         if(update1.circle()) {
-            if(targettingTowerGoal) {
-                for (int i = 0; i < 3; i++) {
-                    actuation.feedRing();
-                }
-            }
-            else {
-                actuation.powerShots();
-            }
+            actuation.turnShooting = true;
+            actuation.shotLeft = false;
+            actuation.shotRight = false;
+            actuation.shotMiddle = true;
         }
+
+        if(update1.triangle()) {
+            sticksUp = !sticksUp;
+        }
+
+        if(sticksUp)
+            actuation.sticksDown();
+        else actuation.sticksUp();
+
+        if(targettingTowerGoal)
+            actuation.shootCVTeleOp(TOWER_GOAL, 3);
+        else actuation.powerShotsTeleOp();
 
         if(update1.share())
             actuation.killFlywheel();
 
-        /* Uncomment for localization debugging
-        telemetry.addData("x", drive.getPoseEstimate().getX());
+        if(update1.ps()) {
+            actuation.frame = new CVShooting(telemetry);
+            actuation.cvShootingInit();
+        }
+
+        // Uncomment for localization debugging
+        /*telemetry.addData("x", drive.getPoseEstimate().getX());
         telemetry.addData("y", drive.getPoseEstimate().getY());
         telemetry.addData("heading", drive.getPoseEstimate().getHeading());*/
         telemetry.addData("Rings" ,actuation.getRings());
@@ -175,25 +191,7 @@ public class TeleOp extends OpMode {
         drive.update();
     }
 
-    /**
-     * Between autonomous and teleop, we want to be able to "quicksave" our location at the end of
-     * autonomous and teleop. This is primarily for knowing where we are on the field so we can
-     * shoot automatically without driver guidance. We do this by adding a serialized version of our
-     * last Pose2d instance to UserPreferences (a small scale implementation of storage on Android),
-     * and retrieving it and "unserializing it" manually. //TODO: Fix this
-     *
-     * @param s toString() of last known Pose2d instance
-     * @return Pose2d instance
-     */
-    static Pose2d unserialize(String s) {
-        String[] components = s.substring(1, s.length() - 1).split(",");
-        double x = parseDouble(components[0].trim());
-        double y = parseDouble(components[1].trim());
-        double heading = parseDouble(components[2].trim());
-        return new Pose2d(x, y, heading);
-    }
-
-    public static double powerScale(double power){
+    public static double powerScale(double power) {
         return powerScale(power, 1);
     }
 

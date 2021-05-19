@@ -20,6 +20,12 @@ public class ActuationConstants {
     static final double WOBBLE_ARM_UP = 0.0;
     static final double WOBBLE_ARM_DOWN = 1.0;
 
+    // Sticks
+    static final double LEFT_STICK_UP = 0.575;
+    static final double LEFT_STICK_DOWN = 0.9;
+    static final double RIGHT_STICK_UP = 0.575;
+    static final double RIGHT_STICKS_DOWN = 0.225;
+
     // Launcher Constants
     public static final double FLYWHEEL_RADIUS = toMeters(2);
     public static final double LAUNCHER_ANGLE = toRadians(32);

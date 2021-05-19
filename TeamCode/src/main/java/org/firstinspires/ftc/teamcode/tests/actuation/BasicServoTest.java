@@ -7,7 +7,6 @@ import com.qualcomm.robotcore.hardware.Servo;
 
 import org.firstinspires.ftc.teamcode.core.gamepad.GamepadEventPS;
 
-@Disabled
 @TeleOp(name = "Basic Servo Test", group = "Tests")
 public class BasicServoTest extends OpMode {
     Servo servo;
@@ -29,9 +28,9 @@ public class BasicServoTest extends OpMode {
     @Override
     public void init() {
 
-        servo = hardwareMap.servo.get("wobbleGrab");
-        servo2 = hardwareMap.servo.get("wobbleArm");
-        servo3 = hardwareMap.servo.get("feeder");
+        servo = hardwareMap.servo.get("rightStick");
+        servo2 = hardwareMap.servo.get("leftStick");
+//        servo3 = hardwareMap.servo.get("feeder");
 
 //        servo2.getController().pwmDisable();
 
@@ -62,12 +61,12 @@ public class BasicServoTest extends OpMode {
             position2 += increment;
 
         servo.setPosition(position);
-        servo3.setPosition(position2);
+        servo2.setPosition(position2);
         telemetry.addData("Increment level", increment);
 //        telemetry.addData("Press a and b to move to either ends", "");
-        telemetry.addData("Current position wobble grab", servo.getPosition());
-//        telemetry.addData("Current position wobble arm", servo2.getPosition());
-        telemetry.addData("Current feeder position", servo3.getPosition());
+        telemetry.addData("Current position right stick", servo.getPosition());
+        telemetry.addData("Current position left stick", servo2.getPosition());
+//        telemetry.addData("Current position right stick", servo3.getPosition());
         telemetry.update();
     }
 }

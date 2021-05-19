@@ -8,7 +8,7 @@ import org.jetbrains.annotations.NotNull;
  * Every button/bumper on the PS controller is mapped to a separate Toggle.OneShot instance.
  */
 public class GamepadEventPS extends Toggle.OneShot {
-    Toggle.OneShot circle, square, cross, triangle, dPadLeft, dPadRight, dPadUp, dPadDown, leftBumper, rightBumper, leftStickButton, rightStickButton, share;
+    Toggle.OneShot circle, square, cross, triangle, dPadLeft, dPadRight, dPadUp, dPadDown, leftBumper, rightBumper, leftStickButton, rightStickButton, share, ps;
 
     Gamepad gamepad;
 
@@ -26,9 +26,9 @@ public class GamepadEventPS extends Toggle.OneShot {
         leftStickButton = new Toggle.OneShot();
         rightStickButton = new Toggle.OneShot();
         share = new Toggle.OneShot();
+        ps = new Toggle.OneShot();
 
         this.gamepad = gamepad;
-
     }
 
     public boolean cross() { return cross.update(gamepad.cross); }
@@ -44,6 +44,7 @@ public class GamepadEventPS extends Toggle.OneShot {
     public boolean leftStickButton() {return leftStickButton.update(gamepad.left_stick_button);}
     public boolean rightStickButton() {return rightStickButton.update(gamepad.right_stick_button);}
     public boolean share() {return share.update(gamepad.share);}
+    public boolean ps() {return share.update(gamepad.ps);}
 
 
 }

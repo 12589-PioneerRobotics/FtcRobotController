@@ -9,8 +9,10 @@ import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.Servo;
 
+import org.firstinspires.ftc.robotcore.external.Telemetry;
 import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
+import org.openftc.easyopencv.OpenCvCameraException;
 import org.openftc.easyopencv.OpenCvCameraFactory;
 import org.openftc.easyopencv.OpenCvCameraRotation;
 import org.openftc.easyopencv.OpenCvWebcam;
@@ -20,18 +22,17 @@ import static com.qualcomm.robotcore.hardware.DcMotor.RunMode.RUN_WITHOUT_ENCODE
 import static com.qualcomm.robotcore.hardware.DcMotor.RunMode.STOP_AND_RESET_ENCODER;
 import static com.qualcomm.robotcore.hardware.DcMotor.ZeroPowerBehavior.BRAKE;
 import static java.lang.Math.PI;
-import static java.lang.Math.cos;
-import static java.lang.Math.pow;
-import static java.lang.Math.sqrt;
-import static java.lang.Math.tan;
+import static java.lang.Math.abs;
+import static java.lang.Math.max;
+import static org.firstinspires.ftc.robotcore.external.navigation.AngleUnit.RADIANS;
 import static org.firstinspires.ftc.teamcode.core.ActuationConstants.CAMERA_POS_AIM;
 import static org.firstinspires.ftc.teamcode.core.ActuationConstants.CAMERA_POS_RINGS;
 import static org.firstinspires.ftc.teamcode.core.ActuationConstants.FEEDER_REST;
 import static org.firstinspires.ftc.teamcode.core.ActuationConstants.FEEDER_YEET;
-import static org.firstinspires.ftc.teamcode.core.ActuationConstants.FLYWHEEL_RADIUS;
-import static org.firstinspires.ftc.teamcode.core.ActuationConstants.LAUNCHER_ANGLE;
-import static org.firstinspires.ftc.teamcode.core.ActuationConstants.POWER_SHOT_FIRE_VERTICAL_DISPLACEMENT;
-import static org.firstinspires.ftc.teamcode.core.ActuationConstants.TOWER_GOAL_VERTICAL_DISPLACEMENT;
+import static org.firstinspires.ftc.teamcode.core.ActuationConstants.LEFT_STICK_DOWN;
+import static org.firstinspires.ftc.teamcode.core.ActuationConstants.LEFT_STICK_UP;
+import static org.firstinspires.ftc.teamcode.core.ActuationConstants.RIGHT_STICKS_DOWN;
+import static org.firstinspires.ftc.teamcode.core.ActuationConstants.RIGHT_STICK_UP;
 import static org.firstinspires.ftc.teamcode.core.ActuationConstants.Target;
 import static org.firstinspires.ftc.teamcode.core.ActuationConstants.Target.POWER_SHOT_LEFT;
 import static org.firstinspires.ftc.teamcode.core.ActuationConstants.Target.POWER_SHOT_MIDDLE;
@@ -43,24 +44,31 @@ import static org.firstinspires.ftc.teamcode.core.ActuationConstants.WOBBLE_GRAB
 import static org.firstinspires.ftc.teamcode.core.ActuationConstants.WOBBLE_RELEASE;
 import static org.firstinspires.ftc.teamcode.core.ActuationConstants.shooterPIDF;
 import static org.firstinspires.ftc.teamcode.core.FieldConstants.SHOOT_LINE;
-import static org.firstinspires.ftc.teamcode.core.FieldConstants.centerPowerShot;
-import static org.firstinspires.ftc.teamcode.core.FieldConstants.leftPowerShot;
-import static org.firstinspires.ftc.teamcode.core.FieldConstants.redGoal;
-import static org.firstinspires.ftc.teamcode.core.FieldConstants.rightPowerShot;
 import static org.firstinspires.ftc.teamcode.tests.KobeTest2.shootDelayMillis;
 
 public class Actuation {
 
     DcMotorEx shoot;
     DcMotor intake, backIntakeBelt;
-    public Servo wobbleGrab, wobbleArm, feeder, cameraServo;
+    public Servo wobbleGrab, wobbleArm, feeder, cameraServo, leftStick, rightStick;
     HardwareMap hardwareMap;
     StandardMechanumDrive drive;
     LinearOpMode linearOpMode;
     OpMode opMode;
     RevColorSensorV3 colorsensor;
     boolean shot;
-    CVShooting frame;
+    public boolean turnShooting = false;
+
+    public boolean shotRight = false;
+    public boolean shotMiddle = false;
+    public boolean shotLeft = false;
+
+    public CVShooting frame;
+
+    public OpenCvWebcam getWebcam() {
+        return webcam;
+    }
+
     OpenCvWebcam webcam;
 
     int rings = 0;
@@ -71,8 +79,8 @@ public class Actuation {
      */
     public Actuation(LinearOpMode linearOpMode, StandardMechanumDrive drive) {
         this(linearOpMode.hardwareMap, drive, linearOpMode, null);
-        frame = new CVShooting(ActuationConstants.Target.values()[0], linearOpMode.telemetry);
         this.linearOpMode = linearOpMode;
+        frame = new CVShooting(linearOpMode.telemetry);
     }
 
     /**
@@ -84,7 +92,9 @@ public class Actuation {
         this.linearOpMode = linearOpMode;
         this.opMode = opMode;
 
-        frame = new CVShooting(ActuationConstants.Target.values()[0], opMode.telemetry);
+        if(linearOpMode == null)
+            frame = new CVShooting(opMode.telemetry);
+        else  frame = new CVShooting(linearOpMode.telemetry);
 
         if (hardwareMap.dcMotor.contains("intake")) {
             intake = hardwareMap.dcMotor.get("intake");
@@ -134,13 +144,47 @@ public class Actuation {
             cameraServo = hardwareMap.servo.get("cameraServo");
             cameraServo.setPosition(CAMERA_POS_RINGS);
         }
+        if(hardwareMap.servo.contains("rightStick") && hardwareMap.servo.contains("leftStick")) {
+            rightStick = hardwareMap.servo.get("rightStick");
+            leftStick = hardwareMap.servo.get("leftStick");
+
+            rightStick.setPosition(RIGHT_STICK_UP);
+            leftStick.setPosition(LEFT_STICK_UP);
+        }
+    }
+
+    private Telemetry telemetry() {
+        if(linearOpMode != null)
+            return linearOpMode.telemetry;
+        else return opMode.telemetry;
+    }
+
+    public void sticksUp() {
+        if(rightStick == null || leftStick == null) return;
+        rightStick.setPosition(RIGHT_STICK_UP);
+        leftStick.setPosition(LEFT_STICK_UP);
+    }
+
+    public void sticksDown() {
+        if(rightStick == null || leftStick == null) return;
+        rightStick.setPosition(RIGHT_STICKS_DOWN);
+        leftStick.setPosition(LEFT_STICK_DOWN);
     }
 
     public void cvShootingInit() {
+        if(linearOpMode == null)
+            frame = new CVShooting(opMode.telemetry);
+        else frame = new CVShooting(linearOpMode.telemetry);
+
         int cameraMonitorViewId = hardwareMap.appContext.getResources().getIdentifier("cameraMonitorViewId", "id", hardwareMap.appContext.getPackageName());
         webcam = OpenCvCameraFactory.getInstance().createWebcam(hardwareMap.get(WebcamName.class,"Webcam 1"), cameraMonitorViewId);
         webcam.setPipeline(frame);
-        webcam.openCameraDeviceAsync(() -> webcam.startStreaming(640, 480, OpenCvCameraRotation.UPRIGHT));
+        try {
+            webcam.openCameraDeviceAsync(() -> webcam.startStreaming(640, 480, OpenCvCameraRotation.UPRIGHT));
+        }
+        catch (OpenCvCameraException e) {
+            telemetry().addLine(e.toString());
+        }
         cameraServoToAim();
     }
 
@@ -160,14 +204,25 @@ public class Actuation {
     public void feedRing() {
         try {
             feeder.setPosition(FEEDER_REST);
-            Thread.sleep((long) Math.max(shootDelayMillis, 0));
+            Thread.sleep(350);
             feeder.setPosition(FEEDER_YEET);
-            Thread.sleep((long) Math.max(shootDelayMillis, 0));
+            Thread.sleep(200);
             feeder.setPosition(FEEDER_REST);
-
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
+
+        /*try {
+            feeder.setPosition(FEEDER_REST);
+            while(abs(shoot.getVelocity(RADIANS) - preheatShooter(frame.getTarget())) > 0.3) {
+                telemetry().addData("Diff", abs(shoot.getVelocity(RADIANS) - preheatShooter(frame.getTarget())));
+            }
+            feeder.setPosition(FEEDER_YEET);
+            Thread.sleep(200);
+            feeder.setPosition(FEEDER_REST);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }*/
     }
 
     public boolean checkRings() {
@@ -205,6 +260,7 @@ public class Actuation {
     public void shoot(Target target) {
         shoot(target, 0.10);
     }
+
     @Deprecated
     public void shoot(Target target, double offset) {
         if (shoot == null || feeder == null) return;
@@ -252,14 +308,67 @@ public class Actuation {
 
     public void shootCV(Target target) {
         cameraServoToAim();
-        frame.setTarget(target);
-        if(!frame.isAligned()) {
-            if(linearOpMode != null) {
+        Target previousTarget = frame.getTarget();
 
+        frame.setTarget(target);
+
+        // Need a delay here for some reason if the target changes. Doesn't change fast enough -_-
+        if(previousTarget != target) {
+            try {
+                Thread.sleep(400);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
             }
         }
-        else {
-            feedRing();
+
+        if(!frame.isAligned()) {
+            while(!frame.isAligned() && linearOpMode.opModeIsActive()) {
+                drive.setWeightedDrivePower(new Pose2d(0,0, cvShootTurnSpeed()));
+            }
+            drive.setWeightedDrivePower(new Pose2d(0,0,0));
+        }
+        feedRing();
+    }
+
+    public boolean shootCVTeleOp(Target target) {
+        return shootCVTeleOp(target, 1);
+    }
+
+    public boolean shootCVTeleOp(Target target, int times) {
+        Target previousTarget = frame.getTarget();
+        frame.setTarget(target);
+        if(previousTarget != target) {
+            try {
+                Thread.sleep(800);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+
+        if (turnShooting) {
+            drive.setWeightedDrivePower(new Pose2d(0, 0, cvShootTurnSpeed()));
+            if (frame.isAligned()) {
+                turnShooting = false;
+                drive.setWeightedDrivePower(new Pose2d(0, 0, 0));
+                for(int i = 0; i < times; i++) {
+                    feedRing();
+                }
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private double cvShootTurnSpeed() {
+        double turnSpeed = 0.17;
+        if(frame.getTarget() == TOWER_GOAL)
+            turnSpeed = 0.26;
+        return frame.targetDist() > 0 ? -turnSpeed : turnSpeed;
+    }
+
+    public void shootCV(int times) {
+        for(int i = 0; i < times; i++) {
+            shootCV();
         }
     }
 
@@ -275,74 +384,47 @@ public class Actuation {
 
     public void powerShots() {
         shootCV(POWER_SHOT_RIGHT);
-        shootCV(POWER_SHOT_LEFT);
         shootCV(POWER_SHOT_MIDDLE);
+        shootCV(POWER_SHOT_LEFT);
     }
 
-    public void preheatShooter(double velocity) {
-        if (shoot != null) shoot.setVelocity(velocity, AngleUnit.RADIANS);
+    public void powerShotsTeleOp() {
+
+        if(!shotRight) {
+            if (shootCVTeleOp(POWER_SHOT_RIGHT)) {
+                shotRight = true;
+                turnShooting = true;
+            }
+        }
+
+        if(shotRight && !shotMiddle) {
+            if (shootCVTeleOp(POWER_SHOT_MIDDLE)) {
+                shotMiddle = true;
+                turnShooting = true;
+            }
+        }
+
+        if(shotRight && shotMiddle && !shotLeft) {
+            if (shootCVTeleOp(POWER_SHOT_LEFT)) {
+                shotLeft = true;
+            }
+        }
     }
 
-    public void preheatShooter(Target target) {
+    public double preheatShooter(double velocity) {
+        if (shoot != null) shoot.setVelocity(velocity, RADIANS);
+        return velocity;
+    }
+
+    public double preheatShooter(Target target) {
         if (shoot != null)
-            shoot.setVelocity(target == TOWER_GOAL ? -3.7 : -3.3, AngleUnit.RADIANS);
+            shoot.setVelocity(target == TOWER_GOAL ? -3.7 : -3.1, RADIANS);
+        return target == TOWER_GOAL ? -3.7 : -3.1;
     }
 
     public void killFlywheel() {
         if (shoot != null) shoot.setPower(0);
     }
-
-    /**
-     * Using a kinematics based approach to calculate the correct initial velocity to launch the ring so
-     * it can reach its goal, based on the vertical/horizontal distance from the target. See
-     * https://www.desmos.com/calculator/qxdrswohm7 for more details, and the engineering notebook
-     * for a complete derivation.
-     *
-     * @param target One of 4 targets to shoot at (3 power shots, and the tower goal)
-     * @return Adjusted speed to run the motor at (see adjust() for more details on the offset).
-     */
-    @Deprecated
-    double calcInitialSpeed(Target target) {
-        double h = 0.0; // in meters
-        final double g = 9.8; // In m/s^2
-        double d = 0.0; // in meters
-        switch (target) {
-            case TOWER_GOAL:
-                h = TOWER_GOAL_VERTICAL_DISPLACEMENT;
-                d = drive.getPoseEstimate().vec().distTo(redGoal);
-                break;
-            case POWER_SHOT_LEFT:
-                h = POWER_SHOT_FIRE_VERTICAL_DISPLACEMENT;
-                d = drive.getPoseEstimate().vec().distTo(leftPowerShot);
-                break;
-            case POWER_SHOT_RIGHT:
-                h = POWER_SHOT_FIRE_VERTICAL_DISPLACEMENT;
-                d = drive.getPoseEstimate().vec().distTo(rightPowerShot);
-                break;
-            case POWER_SHOT_MIDDLE:
-                h = POWER_SHOT_FIRE_VERTICAL_DISPLACEMENT;
-                d = drive.getPoseEstimate().vec().distTo(centerPowerShot);
-                break;
-        }
-        double linearSpeed = sqrt((pow(d, 2) * g) / (pow(cos(LAUNCHER_ANGLE), 2) * (2 * d * tan(LAUNCHER_ANGLE) - 2 * h)));
-        return adjust(linearSpeed / FLYWHEEL_RADIUS);
-    }
-
-    /**
-     * Offsets the calculated, "theoretical" initial angular velocity (in rad/s) based on testing.
-     * When the launcher actually is fed a ring, its set velocity (which is accurate to about +/- .5
-     * rad/s) decreases due to the resistance from the ring. So, based on some tests we ran, the
-     * speed is offsetted by about .75 rad/s to counter the decrease to keep expectations
-     * consistent.
-     *
-     * @param angVel Speed from calcInitialSpeed()
-     * @return Adjusted speed, still in rad/s
-     */
-    @Deprecated
-    double adjust(double angVel) {
-        return angVel + .75;
-    }
-
 
     // All Intake Operations
 
@@ -388,7 +470,7 @@ public class Actuation {
             wobbleArm.setPosition(WOBBLE_ARM_UP);
     }
 
-    public void wobbleArmSlightltyUp() {
+    public void wobbleArmSlightlyUp() {
         if (wobbleArm != null)
             wobbleArm.setPosition(.6);
     }
@@ -404,30 +486,12 @@ public class Actuation {
         }
     }
 
-    public void grabWobble() {
-        if (wobbleArm != null && wobbleGrab != null) {
-            wobbleArmDown();
-            linearOpMode.sleep(750);
-            wobbleClawClose();
-            linearOpMode.sleep(750);
-            wobbleArmUp();
-        }
-    }
-
     public boolean isWobbleArmUp() {
         return wobbleArm.getPosition() == WOBBLE_ARM_UP;
     }
 
-    public boolean isWobbleArmDown() {
-        return wobbleArm.getPosition() == WOBBLE_ARM_DOWN;
-    }
-
     public boolean isWobbleClawOpen() {
         return wobbleGrab.getPosition() == WOBBLE_RELEASE;
-    }
-
-    public boolean isWobbleClawClosed() {
-        return wobbleGrab.getPosition() == WOBBLE_GRAB;
     }
 
 }
